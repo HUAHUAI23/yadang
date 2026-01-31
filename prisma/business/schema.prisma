@@ -1,0 +1,11 @@
+// Business DB: schema and migrations managed by Prisma Migrate.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/business"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("BUSINESS_DATABASE_URL")
+}

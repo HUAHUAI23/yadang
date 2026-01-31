@@ -1,0 +1,11 @@
+// External product DB: schema via db pull only; migrations are forbidden.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/external"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("EXTERNAL_DATABASE_URL")
+}
