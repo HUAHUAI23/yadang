@@ -1,11 +1,10 @@
-// External product DB: schema via db pull only; migrations are forbidden.
+// 外部商品库：仅结构拉取（db pull），禁止迁移。
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../generated/external"
 }
 
 datasource db {
   provider = "mysql"
-  url      = env("EXTERNAL_DATABASE_URL")
 }

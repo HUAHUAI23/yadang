@@ -7,13 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prisma:business:generate": "prisma generate --schema=prisma/business/schema.prisma",
-    "prisma:business:migrate:dev": "prisma migrate dev --schema=prisma/business/schema.prisma",
-    "prisma:business:migrate:deploy": "prisma migrate deploy --schema=prisma/business/schema.prisma",
-    "prisma:business:studio": "prisma studio --schema=prisma/business/schema.prisma",
-    "prisma:external:pull": "prisma db pull --schema=prisma/external/schema.prisma",
-    "prisma:external:generate": "prisma generate --schema=prisma/external/schema.prisma",
-    "prisma:external:studio": "prisma studio --schema=prisma/external/schema.prisma"
+    "prisma:business:generate": "prisma generate --config=prisma/business/prisma.config.ts",
+    "prisma:business:migrate:dev": "prisma migrate dev --config=prisma/business/prisma.config.ts",
+    "prisma:business:migrate:deploy": "prisma migrate deploy --config=prisma/business/prisma.config.ts",
+    "prisma:business:studio": "prisma studio --config=prisma/business/prisma.config.ts",
+    "prisma:external:pull": "prisma db pull --config=prisma/external/prisma.config.ts",
+    "prisma:external:generate": "prisma generate --config=prisma/external/prisma.config.ts",
+    "prisma:external:studio": "prisma studio --config=prisma/external/prisma.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -48,6 +48,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "immer": "^11.1.3",
     "input-otp": "^1.4.2",

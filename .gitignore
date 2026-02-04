@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# prisma
+/prisma/generated/
+
 # production
 /build
 
@@ -40,4 +43,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-helloagentw
+helloagents

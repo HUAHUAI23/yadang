@@ -8,7 +8,8 @@
 - **UI 组件:** shadcn/ui (Radix UI)
 - **状态管理:** Zustand
 - **表单与校验:** react-hook-form + zod + @hookform/resolvers
-- **数据访问:** Prisma ORM（业务库 + 外部商品库）
+- **数据访问:** Prisma ORM 7（prisma.config.ts 管理多库配置，业务库迁移 + 外部库结构拉取）
+- **环境变量:** dotenv 统一加载（服务端与 Prisma CLI）
 - **数据库:** MySQL（业务/外部）/ Milvus（向量库，规划）
 
 ---

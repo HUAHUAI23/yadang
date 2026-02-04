@@ -1,7 +1,8 @@
-// External product DB Prisma Client singleton for server-only usage.
+// 外部商品库 Prisma Client 单例封装，仅服务端使用。
 import "server-only";
 
-import { PrismaClient } from "@/prisma/generated/external";
+import "@/lib/env";
+import { PrismaClient } from "@/prisma/generated/external/client";
 
 const globalForPrisma = globalThis as unknown as {
   prismaExternal?: PrismaClient;

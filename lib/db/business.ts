@@ -1,7 +1,8 @@
-// Business DB Prisma Client singleton to avoid extra connections in dev.
+// 业务库 Prisma Client 单例封装，避免开发态重复连接。
 import "server-only";
 
-import { PrismaClient } from "@/prisma/generated/business";
+import "@/lib/env";
+import { PrismaClient } from "@/prisma/generated/business/client";
 
 const globalForPrisma = globalThis as unknown as {
   prismaBusiness?: PrismaClient;

@@ -11,6 +11,9 @@
 - 新增业务组件集（Header/Landing/Upload/Results/Dialogs 等）
 - Mock API 统一封装与 Zustand 持久化状态
 - Prisma 多数据库接入基础设施（业务库 + 外部商品库）
+- Prisma 7 仅结构拉取工作流与脚本
+- 业务库迁移表结构与 dotenv 统一加载
+- Prisma 7 Config 多库配置（prisma.config.ts）
 
 ### 变更
 - 全局样式与字体体系对齐 yadang-1 视觉规范
