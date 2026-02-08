@@ -6,9 +6,10 @@ flowchart TD
     U[用户] --> A[Next.js App Router]
     A --> C[页面/业务组件]
     C --> S[客户端状态与存储]
-    C --> L[API Client 伪接口]
-    L --> M[Mock 数据/伪响应]
-    A --> D[服务端数据访问层]
+    C --> L[API Client]
+    L --> R[Route Handlers]
+    R --> D[服务端数据访问层]
+    R --> X[阿里云短信服务]
     D --> P[Prisma Client]
     P --> B[(业务库 MySQL)]
     P --> E[(外部商品库 MySQL)]
@@ -17,16 +18,18 @@ flowchart TD
 ```
 
 ## 技术栈
-- **后端:** 暂无真实后端（伪接口占位，已预置 Prisma 数据访问层）
+- **后端:** Next.js Route Handlers + Prisma 数据访问层
 - **前端:** Next.js App Router + React + TypeScript + Tailwind + shadcn/ui
 - **数据:** 本地存储与内存状态 / MySQL（业务库迁移管理 + 外部库结构拉取）/ Milvus（向量库，规划）
+- **鉴权:** jose（JWT + HttpOnly Cookie）
+- **短信:** 阿里云 SMS
 
 ## 核心流程
 ```mermaid
 sequenceDiagram
     participant U as 用户
     participant UI as 前端UI
-    participant API as 伪API封装
+    participant API as API封装
     U->>UI: 上传图片并选择检索配置
     UI->>API: submitSearch(payload)
     API-->>UI: 返回模拟检索结果
@@ -46,3 +49,4 @@ sequenceDiagram
 | ADR-006 | 业务库使用迁移，外部库仅结构拉取 | 2026-02-04 | ✅已采纳 | prisma/lib | [链接](../history/2026-02/202602040657_prisma-business-schema-dotenv/how.md) |
 | ADR-007 | dotenv 统一加载环境变量 | 2026-02-04 | ✅已采纳 | lib | [链接](../history/2026-02/202602040657_prisma-business-schema-dotenv/how.md) |
 | ADR-008 | Prisma 7 Config 管理多库配置 | 2026-02-04 | ✅已采纳 | prisma | [链接](../history/2026-02/202602040741_prisma7-config-mysql/how.md) |
+| ADR-009 | JWT + HttpOnly Cookie 会话 | 2026-02-04 | ✅已采纳 | auth | [链接](../history/2026-02/202602040922_auth-system-jose-aliyun/how.md) |

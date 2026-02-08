@@ -8,11 +8,15 @@
 
 | 时间戳 | 功能名称 | 类型 | 状态 | 方案包路径 |
 |--------|----------|------|------|------------|
+| 202602081334 | aliyun-sms-sdk-upgrade | 修复 | ✅已完成 | [链接](2026-02/202602081334_aliyun-sms-sdk-upgrade/) |
 | 202601301535 | yadang-ui-ux | 功能 | ✅已完成 | [链接](2026-01/202601301535_yadang-ui-ux/) |
 | 202601310841 | prisma-multi-db | 功能 | ✅已完成 | [链接](2026-01/202601310841_prisma-multi-db/) |
 | 202602040627 | prisma7-introspection | 功能 | ✅已完成 | [链接](2026-02/202602040627_prisma7-introspection/) |
 | 202602040657 | prisma-business-schema-dotenv | 功能 | ✅已完成 | [链接](2026-02/202602040657_prisma-business-schema-dotenv/) |
 | 202602040741 | prisma7-config-mysql | 功能 | ✅已完成 | [链接](2026-02/202602040741_prisma7-config-mysql/) |
+| 202602040922 | auth-system-jose-aliyun | 功能 | ✅已完成 | [链接](2026-02/202602040922_auth-system-jose-aliyun/) |
+| 202602041028 | env-config-class | 功能 | ✅已完成 | [链接](2026-02/202602041028_env-config-class/) |
+| 202602041251 | account-model | 功能 | ✅已完成 | [链接](2026-02/202602041251_account-model/) |
 
 ---
 
@@ -28,3 +32,7 @@
 - [202602040627_prisma7-introspection](2026-02/202602040627_prisma7-introspection/) - Prisma 7 仅结构拉取工作流
 - [202602040657_prisma-business-schema-dotenv](2026-02/202602040657_prisma-business-schema-dotenv/) - 业务库迁移 + dotenv 统一管理
 - [202602040741_prisma7-config-mysql](2026-02/202602040741_prisma7-config-mysql/) - Prisma 7 Config 多库配置
+- [202602040922_auth-system-jose-aliyun](2026-02/202602040922_auth-system-jose-aliyun/) - 用户系统（JWT + 阿里云短信）
+- [202602041028_env-config-class](2026-02/202602041028_env-config-class/) - 环境变量统一管理类
+- [202602041251_account-model](2026-02/202602041251_account-model/) - 账户额度 Account 表（BigInt）
+- [202602081334_aliyun-sms-sdk-upgrade](2026-02/202602081334_aliyun-sms-sdk-upgrade/) - 阿里云短信 SDK 升级（20180501）

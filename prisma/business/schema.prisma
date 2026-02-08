@@ -8,3 +8,76 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+enum AuthMethod {
+  PASSWORD
+  SMS
+}
+
+enum VerificationChannel {
+  SMS
+}
+
+enum VerificationPurpose {
+  LOGIN
+  REGISTER
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  username          String?            @unique
+  phone             String?            @unique
+  email             String?            @unique
+  avatar            String             @default("")
+  passwordHash      String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  credits           UserCredits?
+  account           Account?
+  verificationCodes VerificationCode[]
+}
+
+model UserCredits {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  balance        Int      @default(0)
+  totalRecharged Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  balance   BigInt   @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuthMethodConfig {
+  id        Int        @id @default(autoincrement())
+  method    AuthMethod @unique
+  enabled   Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model VerificationCode {
+  id          Int                 @id @default(autoincrement())
+  recipient   String
+  channel     VerificationChannel
+  purpose     VerificationPurpose
+  codeHash    String
+  expiresAt   DateTime
+  used        Boolean             @default(false)
+  attempts    Int                 @default(0)
+  maxAttempts Int                 @default(5)
+  userId      Int?
+  createdAt   DateTime            @default(now())
+  user        User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([recipient, purpose])
+  @@index([expiresAt])
+}

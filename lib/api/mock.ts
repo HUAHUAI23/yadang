@@ -1,8 +1,5 @@
 import type {
   ApiResponse,
-  AuthPayload,
-  AuthResult,
-  RegisterPayload,
   SearchConfig,
   SearchResponse,
 } from "@/lib/types";
@@ -117,22 +114,6 @@ export async function mockSearch(
   };
 }
 
-export async function mockLogin(
-  payload: AuthPayload
-): Promise<ApiResponse<AuthResult>> {
-  void payload;
-  await delay(500);
-  return { code: 0, data: { token: "mock-token" } };
-}
-
-export async function mockRegister(
-  payload: RegisterPayload
-): Promise<ApiResponse<AuthResult>> {
-  void payload;
-  await delay(600);
-  return { code: 0, data: { token: "mock-token" } };
-}
-
 export async function mockRecharge(packageId: string) {
   await delay(400);
   const pkg = RECHARGE_PACKAGES.find((item) => item.id === packageId);
@@ -142,12 +123,6 @@ export async function mockRecharge(packageId: string) {
   }
 
   return { code: 0, data: { credits: pkg.credits, amount: pkg.amount } };
-}
-
-export async function mockSendSms(phone: string) {
-  void phone;
-  await delay(400);
-  return { code: 0, data: { sms: "123456" } };
 }
 
 export async function mockClearHistory() {

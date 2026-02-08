@@ -10,6 +10,8 @@
 - **表单与校验:** react-hook-form + zod + @hookform/resolvers
 - **数据访问:** Prisma ORM 7（prisma.config.ts 管理多库配置，业务库迁移 + 外部库结构拉取）
 - **环境变量:** dotenv 统一加载（服务端与 Prisma CLI）
+- **鉴权与会话:** jose (JWT + HttpOnly Cookie)
+- **短信服务:** 阿里云 SMS（Dysmsapi 2017-05-25）
 - **数据库:** MySQL（业务/外部）/ Milvus（向量库，规划）
 
 ---

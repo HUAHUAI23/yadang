@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/patent-lens/header";
 import Landing from "@/components/patent-lens/landing";
 import UploadSection from "@/components/patent-lens/upload-section";
@@ -41,7 +41,7 @@ export default function AppShell() {
   const {
     isAuthenticated,
     credits,
-    setAuthenticated,
+    setSession,
     logout,
     debitCredits,
     rechargeCredits,
@@ -51,6 +51,28 @@ export default function AppShell() {
   } = usePatentLensStore();
 
   const cost = useMemo(() => calculateCost(searchConfig), [searchConfig]);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .authMe()
+      .then((response) => {
+        if (!active) return;
+        if (response.code === 0 && response.data) {
+          setSession({
+            user: response.data.user,
+            credits: response.data.credits,
+          });
+        } else {
+          setSession({ user: null });
+        }
+      })
+      .catch(() => setSession({ user: null }));
+
+    return () => {
+      active = false;
+    };
+  }, [setSession]);
 
   const handleSearch = async (base64: string, config: SearchConfig) => {
     if (!isAuthenticated) {
@@ -137,6 +159,7 @@ export default function AppShell() {
   };
 
   const handleLogout = () => {
+    api.authLogout().catch(() => null);
     logout();
     setResults({ patents: [], trademarks: [] });
     setPreview(null);
@@ -205,7 +228,9 @@ export default function AppShell() {
         <AuthDialog
           open={isAuthOpen}
           onOpenChange={setIsAuthOpen}
-          onSuccess={() => setAuthenticated(true)}
+          onSuccess={(result) =>
+            setSession({ user: result.user, credits: result.credits })
+          }
         />
       )}
     </div>

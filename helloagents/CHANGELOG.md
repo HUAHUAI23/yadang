@@ -14,9 +14,13 @@
 - Prisma 7 仅结构拉取工作流与脚本
 - 业务库迁移表结构与 dotenv 统一加载
 - Prisma 7 Config 多库配置（prisma.config.ts）
+- 用户系统（用户名密码 + 短信验证码登录）
+- 环境变量统一管理类（EnvConfig）
+- 新增 Account 表（账户额度 BIGINT）
 
 ### 变更
 - 全局样式与字体体系对齐 yadang-1 视觉规范
 - 移除 yadang-1 参考目录并清理文档索引
 - 修复 `components/ui/sidebar.tsx` 的渲染纯度 lint 错误
 - 将业务图片标签替换为 `next/image` 以通过 lint 与优化资源加载
+- 升级阿里云短信 SDK 至 `@alicloud/dysmsapi20180501` 并兼容新旧发送 API

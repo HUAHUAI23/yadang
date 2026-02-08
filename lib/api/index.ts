@@ -1,17 +1,17 @@
 import { request } from "@/lib/api/client";
 import {
   mockSearch,
-  mockLogin,
-  mockRegister,
   mockRecharge,
-  mockSendSms,
   mockClearHistory,
 } from "@/lib/api/mock";
 import type {
   ApiResponse,
-  AuthPayload,
+  AuthConfig,
   AuthResult,
+  PasswordLoginPayload,
   RegisterPayload,
+  SmsLoginPayload,
+  SmsSendPayload,
   SearchConfig,
   SearchResponse,
 } from "@/lib/types";
@@ -26,11 +26,17 @@ export const api = {
       body: payload,
       mock: () => mockSearch(payload.imageBase64, payload.config),
     }),
-  authLogin: (payload: AuthPayload): Promise<ApiResponse<AuthResult>> =>
-    request("/api/auth/login", {
+  authLoginPassword: (
+    payload: PasswordLoginPayload
+  ): Promise<ApiResponse<AuthResult>> =>
+    request("/api/auth/login/password", {
       method: "POST",
       body: payload,
-      mock: () => mockLogin(payload),
+    }),
+  authLoginSms: (payload: SmsLoginPayload): Promise<ApiResponse<AuthResult>> =>
+    request("/api/auth/login/sms", {
+      method: "POST",
+      body: payload,
     }),
   authRegister: (
     payload: RegisterPayload
@@ -38,13 +44,23 @@ export const api = {
     request("/api/auth/register", {
       method: "POST",
       body: payload,
-      mock: () => mockRegister(payload),
     }),
-  sendSms: (phone: string): Promise<ApiResponse<{ sms: string }>> =>
+  authConfig: (): Promise<ApiResponse<AuthConfig>> =>
+    request("/api/auth/config", {
+      method: "GET",
+    }),
+  authMe: (): Promise<ApiResponse<AuthResult>> =>
+    request("/api/auth/me", {
+      method: "GET",
+    }),
+  authLogout: (): Promise<ApiResponse<{ ok: boolean }>> =>
+    request("/api/auth/logout", {
+      method: "POST",
+    }),
+  sendSms: (payload: SmsSendPayload): Promise<ApiResponse<{ sent: boolean }>> =>
     request("/api/auth/sms", {
       method: "POST",
-      body: { phone },
-      mock: () => mockSendSms(phone),
+      body: payload,
     }),
   recharge: (packageId: string) =>
     request("/api/recharge", {

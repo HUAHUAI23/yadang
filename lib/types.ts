@@ -50,21 +50,45 @@ export type SearchResponse = {
 
 export type ApiResponse<T> = {
   code: number;
-  data: T;
+  data: T | null;
   message?: string;
 };
 
-export type AuthPayload = {
-  phone: string;
+export type AuthConfig = {
+  password: boolean;
+  sms: boolean;
+};
+
+export type AuthUser = {
+  id: number;
+  username: string | null;
+  phone: string | null;
+  avatar: string;
+};
+
+export type PasswordLoginPayload = {
+  username: string;
   password: string;
+};
+
+export type SmsLoginPayload = {
+  phone: string;
+  sms: string;
 };
 
 export type RegisterPayload = {
+  username: string;
   phone: string;
-  sms: string;
+  sms?: string;
   password: string;
 };
 
+export type SmsSendPayload = {
+  phone: string;
+  purpose: "login" | "register";
+};
+
 export type AuthResult = {
-  token: string;
+  user: AuthUser;
+  credits: UserCredits;
 };

@@ -1,10 +1,10 @@
 # API 手册
 
 ## 概述
-当前阶段为前端 UI/UX 实现，所有接口为伪实现（Mock），仅用于联调与交互占位。
+当前阶段认证相关接口为真实实现，其余业务接口仍保留 Mock 用于 UI 交互占位。
 
 ## 认证方式
-- 暂无真实鉴权，模拟手机号/密码与验证码逻辑。
+- JWT + HttpOnly Cookie，会话由后端签发与校验。
 
 ---
 
@@ -12,46 +12,89 @@
 
 ### 认证 Auth
 
-#### [POST] /api/auth/login
-**描述:** 登录（伪接口）
+#### [GET] /api/auth/config
+**描述:** 获取登录方式配置
+
+**请求参数:**
+无
+
+**响应:**
+```json
+{ "code": 0, "data": { "password": true, "sms": true } }
+```
+
+#### [POST] /api/auth/login/password
+**描述:** 用户名密码登录
 
 **请求参数:**
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| phone | string | 是 | 手机号 |
+| username | string | 是 | 用户名 |
 | password | string | 是 | 密码 |
 
 **响应:**
 ```json
-{ "code": 0, "data": { "token": "mock" } }
+{ "code": 0, "data": { "user": {}, "credits": {} } }
 ```
 
-#### [POST] /api/auth/sms
-**描述:** 发送短信验证码（伪接口）
-
-**请求参数:**
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| phone | string | 是 | 手机号 |
-
-**响应:**
-```json
-{ "code": 0, "data": { "sms": "123456" } }
-```
-
-#### [POST] /api/auth/register
-**描述:** 注册（伪接口）
+#### [POST] /api/auth/login/sms
+**描述:** 手机短信验证码登录
 
 **请求参数:**
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | phone | string | 是 | 手机号 |
 | sms | string | 是 | 短信验证码 |
+
+**响应:**
+```json
+{ "code": 0, "data": { "user": {}, "credits": {} } }
+```
+
+#### [POST] /api/auth/register
+**描述:** 用户名密码注册
+
+**请求参数:**
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| username | string | 是 | 用户名 |
+| phone | string | 是 | 手机号 |
+| sms | string | 否 | 短信验证码（短信开启时必填） |
 | password | string | 是 | 密码 |
 
 **响应:**
 ```json
-{ "code": 0, "data": { "token": "mock" } }
+{ "code": 0, "data": { "user": {}, "credits": {} } }
+```
+
+#### [POST] /api/auth/sms
+**描述:** 发送短信验证码
+
+**请求参数:**
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| phone | string | 是 | 手机号 |
+| purpose | string | 是 | login / register |
+
+**响应:**
+```json
+{ "code": 0, "data": { "sent": true } }
+```
+
+#### [POST] /api/auth/logout
+**描述:** 退出登录
+
+**响应:**
+```json
+{ "code": 0, "data": { "ok": true } }
+```
+
+#### [GET] /api/auth/me
+**描述:** 获取当前登录用户
+
+**响应:**
+```json
+{ "code": 0, "data": { "user": {}, "credits": {} } }
 ```
 
 ---

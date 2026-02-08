@@ -6,13 +6,14 @@ import {
   INITIAL_CREDITS,
   MAX_HISTORY_ITEMS,
 } from "@/lib/constants";
-import type { HistoryItem, UserCredits } from "@/lib/types";
+import type { AuthUser, HistoryItem, UserCredits } from "@/lib/types";
 
 type PatentLensState = {
+  user: AuthUser | null;
   isAuthenticated: boolean;
   credits: UserCredits;
   history: HistoryItem[];
-  setAuthenticated: (value: boolean) => void;
+  setSession: (payload: { user: AuthUser | null; credits?: UserCredits }) => void;
   logout: () => void;
   debitCredits: (amount: number) => void;
   rechargeCredits: (credits: number, amount: number) => void;
@@ -34,11 +35,17 @@ const storage =
 export const usePatentLensStore = create<PatentLensState>()(
   persist(
     (set) => ({
+      user: null,
       isAuthenticated: false,
       credits: { balance: INITIAL_CREDITS, totalRecharged: 0 },
       history: [],
-      setAuthenticated: (value) => set({ isAuthenticated: value }),
-      logout: () => set({ isAuthenticated: false }),
+      setSession: ({ user, credits }) =>
+        set((state) => ({
+          user,
+          isAuthenticated: Boolean(user),
+          credits: credits ?? state.credits,
+        })),
+      logout: () => set({ user: null, isAuthenticated: false }),
       debitCredits: (amount) =>
         set((state) => ({
           credits: {
@@ -63,6 +70,7 @@ export const usePatentLensStore = create<PatentLensState>()(
       name: "patent_lens_store",
       storage,
       partialize: (state) => ({
+        user: state.user,
         isAuthenticated: state.isAuthenticated,
         credits: state.credits,
         history: state.history,

@@ -21,8 +21,11 @@
 | 字段名 | 类型 | 约束 | 说明 |
 |--------|------|------|------|
 | id | Int | 主键 | 自增ID |
-| phone | String | 唯一 | 手机号 |
-| passwordHash | String | 非空 | 密码摘要 |
+| username | String | 唯一 | 用户名（可为空） |
+| phone | String | 唯一 | 手机号（可为空） |
+| email | String | 唯一 | 邮箱（可为空） |
+| avatar | String | 非空 | 头像 |
+| passwordHash | String | 可选 | 密码摘要 |
 | createdAt | DateTime | 非空 | 创建时间 |
 | updatedAt | DateTime | 非空 | 更新时间 |
 
@@ -35,6 +38,17 @@
 | userId | Int | 唯一 | 关联用户 |
 | balance | Int | 非空 | 当前余额 |
 | totalRecharged | Int | 非空 | 累计充值 |
+| createdAt | DateTime | 非空 | 创建时间 |
+| updatedAt | DateTime | 非空 | 更新时间 |
+
+### Account
+**描述:** 账户额度（使用大整数，单位为最小计费单位）
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| id | Int | 主键 | 自增ID |
+| userId | Int | 唯一 | 关联用户 |
+| balance | BigInt | 非空 | 当前额度 |
 | createdAt | DateTime | 非空 | 创建时间 |
 | updatedAt | DateTime | 非空 | 更新时间 |
 
@@ -89,6 +103,34 @@
 | packageId | String | 非空 | 套餐ID |
 | amount | Int | 非空 | 价格 |
 | credits | Int | 非空 | 积分 |
+| createdAt | DateTime | 非空 | 创建时间 |
+
+### AuthMethodConfig
+**描述:** 登录方式配置
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| id | Int | 主键 | 自增ID |
+| method | enum | 唯一 | PASSWORD / SMS |
+| enabled | Boolean | 非空 | 是否启用 |
+| createdAt | DateTime | 非空 | 创建时间 |
+| updatedAt | DateTime | 非空 | 更新时间 |
+
+### VerificationCode
+**描述:** 短信验证码
+
+| 字段名 | 类型 | 约束 | 说明 |
+|--------|------|------|------|
+| id | Int | 主键 | 自增ID |
+| recipient | String | 非空 | 接收手机号 |
+| channel | enum | 非空 | SMS |
+| purpose | enum | 非空 | LOGIN / REGISTER |
+| codeHash | String | 非空 | 哈希后的验证码 |
+| expiresAt | DateTime | 非空 | 过期时间 |
+| used | Boolean | 非空 | 是否已使用 |
+| attempts | Int | 非空 | 尝试次数 |
+| maxAttempts | Int | 非空 | 最大次数 |
+| userId | Int | 可选 | 关联用户 |
 | createdAt | DateTime | 非空 | 创建时间 |
 
 ---

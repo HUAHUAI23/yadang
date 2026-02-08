@@ -6,7 +6,7 @@
 ## 模块概述
 - **职责:** 工具函数、API Client、Mock 数据、类型辅助与 Prisma 数据库客户端封装
 - **状态:** 🚧开发中
-- **最后更新:** 2026-02-04
+- **最后更新:** 2026-02-08
 
 ## 规范
 ### 需求: API 统一封装
@@ -30,8 +30,18 @@
 #### 场景: 环境变量加载
 通过 dotenv 统一加载 `.env`，覆盖 Prisma CLI 与服务端模块。
 
+#### 场景: 环境变量配置类
+通过 `lib/env.ts` 的 EnvConfig 统一读取与校验关键配置。
+
 #### 场景: Prisma 配置管理
 使用 `prisma.config.ts` 统一定义多库 schema 路径与连接信息。
+
+### 需求: 认证与会话
+**模块:** lib/auth
+提供 JWT 签发/验证、密码哈希、短信验证码与登录方式配置封装。
+
+#### 场景: 登录鉴权
+Route Handler 调用 `lib/auth` 模块完成登录校验与 Cookie 写入。
 
 ## API接口
 - 参见 `wiki/api.md`
@@ -42,9 +52,12 @@
 ## 依赖
 - Prisma ORM
 - dotenv
+- Alibaba Cloud SMS SDK (dysmsapi20180501)
 
 ## 变更历史
 - [202601301535_yadang-ui-ux](../../history/2026-01/202601301535_yadang-ui-ux/) - Mock API 与类型封装
 - [202601310841_prisma-multi-db](../../history/2026-01/202601310841_prisma-multi-db/) - Prisma 多数据库客户端封装
 - [202602040627_prisma7-introspection](../../history/2026-02/202602040627_prisma7-introspection/) - Prisma 7 仅结构拉取工作流
 - [202602040741_prisma7-config-mysql](../../history/2026-02/202602040741_prisma7-config-mysql/) - Prisma 7 Config 多库配置
+- [202602040922_auth-system-jose-aliyun](../../history/2026-02/202602040922_auth-system-jose-aliyun/) - 用户认证与短信登录
+- [202602081334_aliyun-sms-sdk-upgrade](../../history/2026-02/202602081334_aliyun-sms-sdk-upgrade/) - 阿里云短信 SDK 升级（20180501）
