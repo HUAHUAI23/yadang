@@ -35,6 +35,10 @@
 
 #### 场景: Prisma 配置管理
 使用 `prisma.config.ts` 统一定义多库 schema 路径与连接信息。
+注意: schema/migrations 路径需相对 `prisma.config.ts` 目录或使用绝对路径，避免重复拼接导致找不到文件。
+
+#### 场景: Prisma 数据源配置
+业务库与外部库 schema 必须声明 datasource url（BUSINESS_DATABASE_URL / EXTERNAL_DATABASE_URL），否则 Prisma Client 初始化会报错。
 
 ### 需求: 认证与会话
 **模块:** lib/auth
@@ -42,6 +46,9 @@
 
 #### 场景: 登录鉴权
 Route Handler 调用 `lib/auth` 模块完成登录校验与 Cookie 写入。
+
+#### 场景: 手机号校验
+短信登录/注册统一使用至少9位数字的手机号校验，前后端保持一致。
 
 ## API接口
 - 参见 `wiki/api.md`
@@ -61,3 +68,4 @@ Route Handler 调用 `lib/auth` 模块完成登录校验与 Cookie 写入。
 - [202602040741_prisma7-config-mysql](../../history/2026-02/202602040741_prisma7-config-mysql/) - Prisma 7 Config 多库配置
 - [202602040922_auth-system-jose-aliyun](../../history/2026-02/202602040922_auth-system-jose-aliyun/) - 用户认证与短信登录
 - [202602081334_aliyun-sms-sdk-upgrade](../../history/2026-02/202602081334_aliyun-sms-sdk-upgrade/) - 阿里云短信 SDK 升级（20180501）
+- [202602081506_phone-validation-relax](../../history/2026-02/202602081506_phone-validation-relax/) - 短信手机号校验放宽

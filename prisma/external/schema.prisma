@@ -1,5 +1,3 @@
-// 外部商品库：仅结构拉取（db pull），禁止迁移。
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/external"
@@ -7,4 +5,24 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model patent_design {
+  publicationNumber      String    @id @db.VarChar(32)
+  countryCode            String?   @db.VarChar(32)
+  countryName            String?   @db.VarChar(255)
+  numberWithoutCodes     String?   @db.VarChar(32)
+  kindCode               String?   @db.VarChar(255)
+  publicationDescription String?   @db.VarChar(32)
+  applicationNumber      String?   @db.VarChar(32)
+  inventor               String?   @db.VarChar(255)
+  assigneeCurrent        String?   @db.VarChar(255)
+  assigneeOriginal       String?   @db.VarChar(255)
+  priorArtKeywords       String?   @db.VarChar(255)
+  events                 String?   @db.Text
+  imageList              String?   @db.Text
+  priorityDate           DateTime? @db.DateTime(0)
+  filingDate             DateTime? @db.DateTime(0)
+  publicationDate        DateTime? @db.DateTime(0)
 }

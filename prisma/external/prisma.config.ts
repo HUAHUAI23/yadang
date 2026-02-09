@@ -5,7 +5,7 @@ import path from "node:path";
 import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
-  schema: path.join("prisma", "external", "schema.prisma"),
+  schema: path.join("schema.prisma"),
   datasource: {
     url: env("EXTERNAL_DATABASE_URL"),
   },

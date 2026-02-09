@@ -24,3 +24,8 @@
 - 修复 `components/ui/sidebar.tsx` 的渲染纯度 lint 错误
 - 将业务图片标签替换为 `next/image` 以通过 lint 与优化资源加载
 - 升级阿里云短信 SDK 至 `@alicloud/dysmsapi20180501` 并兼容新旧发送 API
+
+### 修复
+- 修正 Prisma config 的 schema/migrations 路径解析，避免重复拼接路径
+- 放宽短信登录手机号校验为至少9位数字
+- 补充 Prisma schema 的 datasource url，修复 Prisma Client 初始化失败

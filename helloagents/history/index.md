@@ -8,6 +8,9 @@
 
 | 时间戳 | 功能名称 | 类型 | 状态 | 方案包路径 |
 |--------|----------|------|------|------------|
+| 202602081542 | prisma-datasource-url-fix | 修复 | ✅已完成 | [链接](2026-02/202602081542_prisma-datasource-url-fix/) |
+| 202602081506 | phone-validation-relax | 修复 | ✅已完成 | [链接](2026-02/202602081506_phone-validation-relax/) |
+| 202602081422 | prisma-config-path-fix | 修复 | ✅已完成 | [链接](2026-02/202602081422_prisma-config-path-fix/) |
 | 202602081334 | aliyun-sms-sdk-upgrade | 修复 | ✅已完成 | [链接](2026-02/202602081334_aliyun-sms-sdk-upgrade/) |
 | 202601301535 | yadang-ui-ux | 功能 | ✅已完成 | [链接](2026-01/202601301535_yadang-ui-ux/) |
 | 202601310841 | prisma-multi-db | 功能 | ✅已完成 | [链接](2026-01/202601310841_prisma-multi-db/) |
@@ -36,3 +39,6 @@
 - [202602041028_env-config-class](2026-02/202602041028_env-config-class/) - 环境变量统一管理类
 - [202602041251_account-model](2026-02/202602041251_account-model/) - 账户额度 Account 表（BigInt）
 - [202602081334_aliyun-sms-sdk-upgrade](2026-02/202602081334_aliyun-sms-sdk-upgrade/) - 阿里云短信 SDK 升级（20180501）
+- [202602081422_prisma-config-path-fix](2026-02/202602081422_prisma-config-path-fix/) - Prisma 配置路径修复
+- [202602081506_phone-validation-relax](2026-02/202602081506_phone-validation-relax/) - 短信手机号校验放宽
+- [202602081542_prisma-datasource-url-fix](2026-02/202602081542_prisma-datasource-url-fix/) - Prisma datasource url 修复

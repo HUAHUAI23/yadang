@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const phoneSchema = z
   .string()
-  .regex(/^1\d{10}$/, "请输入合法的11位手机号");
+  .trim()
+  .regex(/^\d{9,15}$/, "请输入至少9位数字手机号");
 
 export const usernameSchema = z
   .string()

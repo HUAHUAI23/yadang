@@ -5,9 +5,9 @@ import path from "node:path";
 import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
-  schema: path.join("prisma", "business", "schema.prisma"),
+  schema: path.join("schema.prisma"),
   migrations: {
-    path: path.join("prisma", "business", "migrations"),
+    path: path.join("migrations"),
   },
   datasource: {
     url: env("BUSINESS_DATABASE_URL"),

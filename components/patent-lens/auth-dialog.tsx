@@ -126,11 +126,11 @@ export default function AuthDialog({
 
   const handleSendSms = async () => {
     if (!allowSms) return;
-    const phone = form.getValues("phone");
+    const phone = form.getValues("phone")?.trim() ?? "";
     const captcha = form.getValues("captcha")?.toUpperCase();
 
-    if (!/^1\\d{10}$/.test(phone)) {
-      form.setError("phone", { message: "请输入合法的11位手机号" });
+    if (!/^\d{9,15}$/.test(phone)) {
+      form.setError("phone", { message: "请输入至少9位数字手机号" });
       return;
     }
 
@@ -295,8 +295,8 @@ export default function AuthDialog({
                       <FormControl>
                         <Input
                           {...field}
-                          maxLength={11}
-                          placeholder="请输入11位中国手机号"
+                          maxLength={15}
+                          placeholder="请输入至少9位手机号"
                           className="bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 font-bold"
                           onChange={(event) =>
                             field.onChange(event.target.value.replace(/\D/g, ""))
