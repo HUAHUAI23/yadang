@@ -22,7 +22,7 @@ export interface PatentResult {
   similarityScore: number;
 }
 
-export interface UserCredits {
+export interface CreditsState {
   balance: number;
   totalRecharged: number;
 }
@@ -90,5 +90,4 @@ export type SmsSendPayload = {
 
 export type AuthResult = {
   user: AuthUser;
-  credits: UserCredits;
 };

@@ -61,7 +61,6 @@ export default function AppShell() {
         if (response.code === 0 && response.data) {
           setSession({
             user: response.data.user,
-            credits: response.data.credits,
           });
         } else {
           setSession({ user: null });
@@ -228,9 +227,7 @@ export default function AppShell() {
         <AuthDialog
           open={isAuthOpen}
           onOpenChange={setIsAuthOpen}
-          onSuccess={(result) =>
-            setSession({ user: result.user, credits: result.credits })
-          }
+          onSuccess={(result) => setSession({ user: result.user })}
         />
       )}
     </div>

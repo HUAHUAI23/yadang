@@ -2,7 +2,7 @@ import { registerPayloadSchema } from "@/lib/validation/auth";
 import { assertAuthMethodEnabled, getAuthConfig } from "@/lib/auth/config";
 import { hashPassword } from "@/lib/auth/password";
 import { signSessionToken, setSessionCookie } from "@/lib/auth/jwt";
-import { ensureUserCredits, toAuthUser } from "@/lib/auth/user";
+import { toAuthUser } from "@/lib/auth/user";
 import { formatPurpose, verifySmsCode } from "@/lib/auth/verification";
 import { businessPrisma } from "@/lib/db/business";
 import { jsonError, jsonOk } from "@/lib/server/response";
@@ -58,9 +58,7 @@ export async function POST(request: Request) {
   const token = await signSessionToken(user.id);
   await setSessionCookie(token);
 
-  const credits = await ensureUserCredits(user.id);
-
-  return jsonOk({ user: toAuthUser(user), credits });
+  return jsonOk({ user: toAuthUser(user) });
 }
 
 export const runtime = "nodejs";

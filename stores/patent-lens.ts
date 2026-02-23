@@ -6,14 +6,14 @@ import {
   INITIAL_CREDITS,
   MAX_HISTORY_ITEMS,
 } from "@/lib/constants";
-import type { AuthUser, HistoryItem, UserCredits } from "@/lib/types";
+import type { AuthUser, CreditsState, HistoryItem } from "@/lib/types";
 
 type PatentLensState = {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  credits: UserCredits;
+  credits: CreditsState;
   history: HistoryItem[];
-  setSession: (payload: { user: AuthUser | null; credits?: UserCredits }) => void;
+  setSession: (payload: { user: AuthUser | null; credits?: CreditsState }) => void;
   logout: () => void;
   debitCredits: (amount: number) => void;
   rechargeCredits: (credits: number, amount: number) => void;

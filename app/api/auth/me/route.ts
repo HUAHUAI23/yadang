@@ -1,5 +1,5 @@
 import { getSessionToken, verifySessionToken } from "@/lib/auth/jwt";
-import { ensureUserCredits, toAuthUser } from "@/lib/auth/user";
+import { toAuthUser } from "@/lib/auth/user";
 import { businessPrisma } from "@/lib/db/business";
 import { jsonError, jsonOk } from "@/lib/server/response";
 
@@ -19,9 +19,8 @@ export async function GET() {
       return jsonError(401, "未登录");
     }
 
-    const credits = await ensureUserCredits(user.id);
-    return jsonOk({ user: toAuthUser(user), credits });
-  } catch (error) {
+    return jsonOk({ user: toAuthUser(user) });
+  } catch {
     return jsonError(401, "会话已失效");
   }
 }

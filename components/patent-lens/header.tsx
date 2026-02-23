@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { UserCredits } from "@/lib/types";
+import type { CreditsState } from "@/lib/types";
 
 interface HeaderProps {
-  credits: UserCredits;
+  credits: CreditsState;
   onOpenRecharge: () => void;
   isAuthenticated: boolean;
   onLogout: () => void;
