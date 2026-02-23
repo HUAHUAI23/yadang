@@ -4,7 +4,7 @@ import { businessPrisma } from "@/lib/db/business";
 import { jsonError, jsonOk } from "@/lib/server/response";
 
 export async function GET() {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   if (!token) {
     return jsonError(401, "未登录");
   }

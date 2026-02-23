@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const token = await signSessionToken(user.id);
-  setSessionCookie(token);
+  await setSessionCookie(token);
 
   const credits = await ensureUserCredits(user.id);
 
@@ -47,4 +47,3 @@ export async function POST(request: Request) {
 }
 
 export const runtime = "nodejs";
-

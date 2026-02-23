@@ -37,8 +37,9 @@ export async function verifySessionToken(token: string) {
   return { userId };
 }
 
-export function setSessionCookie(token: string) {
-  cookies().set({
+export async function setSessionCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set({
     name: getCookieName(),
     value: token,
     httpOnly: true,
@@ -49,8 +50,9 @@ export function setSessionCookie(token: string) {
   });
 }
 
-export function clearSessionCookie() {
-  cookies().set({
+export async function clearSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.set({
     name: getCookieName(),
     value: "",
     httpOnly: true,
@@ -61,7 +63,8 @@ export function clearSessionCookie() {
   });
 }
 
-export function getSessionToken() {
-  const token = cookies().get(getCookieName())?.value;
+export async function getSessionToken() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(getCookieName())?.value;
   return token ?? "";
 }

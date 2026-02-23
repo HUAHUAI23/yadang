@@ -2,7 +2,7 @@ import { clearSessionCookie } from "@/lib/auth/jwt";
 import { jsonOk } from "@/lib/server/response";
 
 export async function POST() {
-  clearSessionCookie();
+  await clearSessionCookie();
   return jsonOk({ ok: true });
 }
 

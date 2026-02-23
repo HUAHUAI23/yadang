@@ -7,7 +7,7 @@ import { businessPrisma } from "@/lib/db/business";
 import {
   VerificationChannel,
   VerificationPurpose,
-} from "@/prisma/generated/business/client";
+} from "@/prisma/generated/business/enums";
 
 const getExpiresInSeconds = () => env.smsCodeExpiresIn;
 const getCooldownSeconds = () => env.smsCodeCooldown;

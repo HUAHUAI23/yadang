@@ -1,31 +1,16 @@
 import "server-only";
 
 import { businessPrisma } from "@/lib/db/business";
-import { AuthMethod } from "@/prisma/generated/business/client";
-
-const ALL_METHODS = [AuthMethod.PASSWORD, AuthMethod.SMS];
-
-async function ensureAuthConfig() {
-  const existing = await businessPrisma.authMethodConfig.findMany({
-    select: { method: true },
-  });
-  const existingSet = new Set(existing.map((item) => item.method));
-  const missing = ALL_METHODS.filter((method) => !existingSet.has(method));
-
-  if (missing.length > 0) {
-    await businessPrisma.authMethodConfig.createMany({
-      data: missing.map((method) => ({
-        method,
-        enabled: true,
-      })),
-      skipDuplicates: true,
-    });
-  }
-}
+import { AuthMethod } from "@/prisma/generated/business/enums";
 
 export async function getAuthConfig() {
-  await ensureAuthConfig();
-  const configs = await businessPrisma.authMethodConfig.findMany();
+  const configs = await businessPrisma.authMethodConfig.findMany({
+    select: { method: true, enabled: true },
+  });
+
+  if (configs.length === 0) {
+    return { password: true, sms: true };
+  }
 
   return {
     password: configs.some(

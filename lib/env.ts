@@ -33,11 +33,25 @@ class EnvConfig {
     return process.env[key] ?? fallback;
   }
 
+  private optionalString(key: string) {
+    const value = process.env[key];
+    return value && value.length > 0 ? value : undefined;
+  }
+
   private number(key: string, fallback: number) {
     const raw = process.env[key];
     if (!raw) return fallback;
     const value = Number.parseInt(raw, 10);
     return Number.isFinite(value) && value > 0 ? value : fallback;
+  }
+
+  private boolean(key: string) {
+    const raw = process.env[key];
+    if (!raw) return undefined;
+    const normalized = raw.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return undefined;
   }
 
   get jwtSecret() {
@@ -58,6 +72,14 @@ class EnvConfig {
 
   get authCookieName() {
     return this.optional("AUTH_COOKIE_NAME", "pl_session");
+  }
+
+  get businessDatabaseUrl() {
+    return this.required("BUSINESS_DATABASE_URL");
+  }
+
+  get externalDatabaseUrl() {
+    return this.required("EXTERNAL_DATABASE_URL");
   }
 
   get smsCodeSecret() {
@@ -98,12 +120,60 @@ class EnvConfig {
     return this.required("ALIYUN_SMS_TEMPLATE_CODE");
   }
 
-  get aliyunSmsRegion() {
-    return this.optional("ALIYUN_SMS_REGION", "cn-hangzhou");
-  }
-
   get aliyunSmsEndpoint() {
     return this.optional("ALIYUN_SMS_ENDPOINT", "dysmsapi.aliyuncs.com");
+  }
+
+  get aliyunSmsConnectTimeoutMs() {
+    return this.number("ALIYUN_SMS_CONNECT_TIMEOUT_MS", 10000);
+  }
+
+  get aliyunSmsReadTimeoutMs() {
+    return this.number("ALIYUN_SMS_READ_TIMEOUT_MS", 10000);
+  }
+
+  get aliyunSmsAutoRetry() {
+    return this.boolean("ALIYUN_SMS_AUTORETRY") ?? true;
+  }
+
+  get aliyunSmsMaxAttempts() {
+    return this.number("ALIYUN_SMS_MAX_ATTEMPTS", 3);
+  }
+
+  get dbSsl() {
+    return this.boolean("DB_SSL");
+  }
+
+  get dbSslCaPath() {
+    return this.optionalString("DB_SSL_CA_PATH");
+  }
+
+  get dbSslRejectUnauthorized() {
+    return this.boolean("DB_SSL_REJECT_UNAUTHORIZED");
+  }
+
+  get businessDbSsl() {
+    return this.boolean("BUSINESS_DB_SSL");
+  }
+
+  get businessDbSslCaPath() {
+    return this.optionalString("BUSINESS_DB_SSL_CA_PATH");
+  }
+
+  get businessDbSslRejectUnauthorized() {
+    return this.boolean("BUSINESS_DB_SSL_REJECT_UNAUTHORIZED");
+  }
+
+  get externalDbSsl() {
+    return this.boolean("EXTERNAL_DB_SSL");
+  }
+
+  get externalDbSslCaPath() {
+    return this.optionalString("EXTERNAL_DB_SSL_CA_PATH");
+  }
+
+  get externalDbSslRejectUnauthorized() {
+    return this.boolean("EXTERNAL_DB_SSL_REJECT_UNAUTHORIZED");
   }
 }
 
