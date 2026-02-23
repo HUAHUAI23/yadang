@@ -1,10 +1,10 @@
-import { loginPasswordSchema } from "@/lib/validation/auth";
 import { assertAuthMethodEnabled } from "@/lib/auth/config";
+import { setSessionCookie,signSessionToken } from "@/lib/auth/jwt";
 import { verifyPassword } from "@/lib/auth/password";
-import { signSessionToken, setSessionCookie } from "@/lib/auth/jwt";
 import { toAuthUser } from "@/lib/auth/user";
 import { businessPrisma } from "@/lib/db/business";
 import { jsonError, jsonOk } from "@/lib/server/response";
+import { loginPasswordSchema } from "@/lib/validation/auth";
 
 export async function POST(request: Request) {
   try {

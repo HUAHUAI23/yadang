@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage, type PersistStorage } from "zustand/middleware";
+import { createJSONStorage, persist, type PersistStorage } from "zustand/middleware";
+
 import {
   INITIAL_CREDITS,
   MAX_HISTORY_ITEMS,

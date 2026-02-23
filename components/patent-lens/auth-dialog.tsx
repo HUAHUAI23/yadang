@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -20,9 +20,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import type { AuthConfig, AuthResult } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import {
   loginPasswordSchema,
   loginSmsSchema,

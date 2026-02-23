@@ -1,8 +1,8 @@
 import { request } from "@/lib/api/client";
 import {
-  mockSearch,
-  mockRecharge,
   mockClearHistory,
+  mockRecharge,
+  mockSearch,
 } from "@/lib/api/mock";
 import type {
   ApiResponse,
@@ -10,10 +10,10 @@ import type {
   AuthResult,
   PasswordLoginPayload,
   RegisterPayload,
-  SmsLoginPayload,
-  SmsSendPayload,
   SearchConfig,
   SearchResponse,
+  SmsLoginPayload,
+  SmsSendPayload,
 } from "@/lib/types";
 
 export const api = {

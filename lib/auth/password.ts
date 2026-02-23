@@ -1,7 +1,7 @@
-import "server-only";
-
 import { randomBytes, scrypt as _scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+
+import "server-only";
 
 const scrypt = promisify(_scrypt);
 const SALT_BYTES = 16;

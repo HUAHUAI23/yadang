@@ -1,7 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import Image from "next/image";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { PatentResult } from "@/lib/types";
 import { SearchType } from "@/lib/types";

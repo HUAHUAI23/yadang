@@ -1,6 +1,6 @@
-import "server-only";
-
 import type { AuthUser } from "@/lib/types";
+
+import "server-only";
 
 export const toAuthUser = (user: {
   id: number;

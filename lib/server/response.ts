@@ -1,7 +1,8 @@
-import "server-only";
-
 import { NextResponse } from "next/server";
+
 import type { ApiResponse } from "@/lib/types";
+
+import "server-only";
 
 export function jsonOk<T>(data: T) {
   const payload: ApiResponse<T> = { code: 0, data };

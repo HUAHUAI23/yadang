@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
+import AuthDialog from "@/components/patent-lens/auth-dialog";
+import Footer from "@/components/patent-lens/footer";
 import Header from "@/components/patent-lens/header";
+import HistorySidebar from "@/components/patent-lens/history-sidebar";
 import Landing from "@/components/patent-lens/landing";
-import UploadSection from "@/components/patent-lens/upload-section";
-import SearchResults from "@/components/patent-lens/search-results";
 import PatentDetail from "@/components/patent-lens/patent-detail";
 import RechargeDialog from "@/components/patent-lens/recharge-dialog";
-import HistorySidebar from "@/components/patent-lens/history-sidebar";
-import Footer from "@/components/patent-lens/footer";
-import AuthDialog from "@/components/patent-lens/auth-dialog";
+import SearchResults from "@/components/patent-lens/search-results";
+import UploadSection from "@/components/patent-lens/upload-section";
 import { api } from "@/lib/api";
 import {
   SEARCH_COST_BOTH,

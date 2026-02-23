@@ -1,9 +1,9 @@
 // 外部商品库 Prisma Client 单例封装，仅服务端使用。
-import "server-only";
-
 import { createMariaDbAdapter } from "@/lib/db/adapter";
 import { env } from "@/lib/env";
 import { PrismaClient } from "@/prisma/generated/external/client";
+
+import "server-only";
 
 type ExternalPrismaClient = InstanceType<typeof PrismaClient>;
 

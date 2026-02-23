@@ -1,7 +1,7 @@
-import "server-only";
-
 import { businessPrisma } from "@/lib/db/business";
 import { AuthMethod } from "@/prisma/generated/business/enums";
+
+import "server-only";
 
 export async function getAuthConfig() {
   const configs = await businessPrisma.authMethodConfig.findMany({

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { HistoryItem } from "@/lib/types";
 

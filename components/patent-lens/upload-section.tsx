@@ -1,11 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { DB_SYNC_TIME, SEARCH_COST_SINGLE, SEARCH_COST_BOTH } from "@/lib/constants";
-import type { SearchConfig } from "@/lib/types";
+import Image from "next/image";
+
 import LibraryOption from "@/components/patent-lens/library-option";
+import { Button } from "@/components/ui/button";
+import { DB_SYNC_TIME, SEARCH_COST_BOTH,SEARCH_COST_SINGLE } from "@/lib/constants";
+import type { SearchConfig } from "@/lib/types";
 
 interface UploadSectionProps {
   onSearch: (base64: string, config: SearchConfig) => void;

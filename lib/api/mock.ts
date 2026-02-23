@@ -1,10 +1,10 @@
+import { RECHARGE_PACKAGES } from "@/lib/constants";
 import type {
   ApiResponse,
   SearchConfig,
   SearchResponse,
 } from "@/lib/types";
 import { SearchType } from "@/lib/types";
-import { RECHARGE_PACKAGES } from "@/lib/constants";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

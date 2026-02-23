@@ -1,7 +1,7 @@
 // 统一加载 .env，并提供服务端环境变量管理类。
-import "server-only";
-
 import { config } from "dotenv";
+
+import "server-only";
 
 const dotenvLoaded = process.env.DOTENV_LOADED;
 

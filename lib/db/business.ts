@@ -1,9 +1,9 @@
 // 业务库 Prisma Client 单例封装，避免开发态重复连接。
-import "server-only";
-
 import { createMariaDbAdapter } from "@/lib/db/adapter";
 import { env } from "@/lib/env";
 import { PrismaClient } from "@/prisma/generated/business/client";
+
+import "server-only";
 
 type BusinessPrismaClient = InstanceType<typeof PrismaClient>;
 

@@ -1,10 +1,10 @@
-import { loginSmsSchema } from "@/lib/validation/auth";
 import { assertAuthMethodEnabled } from "@/lib/auth/config";
-import { signSessionToken, setSessionCookie } from "@/lib/auth/jwt";
+import { setSessionCookie,signSessionToken } from "@/lib/auth/jwt";
 import { toAuthUser } from "@/lib/auth/user";
 import { formatPurpose, verifySmsCode } from "@/lib/auth/verification";
 import { businessPrisma } from "@/lib/db/business";
 import { jsonError, jsonOk } from "@/lib/server/response";
+import { loginSmsSchema } from "@/lib/validation/auth";
 
 export async function POST(request: Request) {
   try {
