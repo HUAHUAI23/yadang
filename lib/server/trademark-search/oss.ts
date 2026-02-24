@@ -1,14 +1,20 @@
-import OSS from "ali-oss";
+import { createRequire } from "node:module";
 
 import { env } from "@/lib/env";
 
 import "server-only";
+
+const loadModule = createRequire(import.meta.url);
 
 const globalForOss = globalThis as unknown as {
   trademarkOssClient?: any;
 };
 
 const createClient = () => {
+  const OSS = loadModule("ali-oss") as new (
+    options: Record<string, unknown>,
+  ) => any;
+
   const options: Record<string, unknown> = {
     region: env.aliyunOssRegion,
     bucket: env.aliyunOssBucket,
@@ -25,26 +31,33 @@ const createClient = () => {
   return client;
 };
 
-export const trademarkOssClient =
-  globalForOss.trademarkOssClient ?? createClient();
+const getOssClient = () => {
+  if (globalForOss.trademarkOssClient) {
+    return globalForOss.trademarkOssClient;
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  globalForOss.trademarkOssClient = trademarkOssClient;
-}
+  const client = createClient();
+  if (process.env.NODE_ENV !== "production") {
+    globalForOss.trademarkOssClient = client;
+  }
+  return client;
+};
 
 export async function uploadSearchImage(
   objectKey: string,
   buffer: Buffer,
   mimeType: string,
 ) {
-  await trademarkOssClient.put(objectKey, buffer, {
+  const client = getOssClient();
+
+  await client.put(objectKey, buffer, {
     headers: {
       "Content-Type": mimeType,
       "Cache-Control": "private, max-age=0, no-cache",
     },
   });
 
-  const url = trademarkOssClient.signatureUrl(objectKey, {
+  const url = client.signatureUrl(objectKey, {
     expires: env.aliyunOssSignedUrlExpiresSeconds,
   });
 
@@ -52,7 +65,9 @@ export async function uploadSearchImage(
 }
 
 export function signResultImageUrl(objectKey: string) {
-  return trademarkOssClient.signatureUrl(objectKey, {
+  const client = getOssClient();
+
+  return client.signatureUrl(objectKey, {
     expires: env.aliyunOssSignedUrlExpiresSeconds,
   });
 }

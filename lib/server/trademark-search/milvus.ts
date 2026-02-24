@@ -21,11 +21,17 @@ const createMilvusClient = () => {
   });
 };
 
-export const milvusClient = globalForMilvus.milvusClient ?? createMilvusClient();
+const getMilvusClient = () => {
+  if (globalForMilvus.milvusClient) {
+    return globalForMilvus.milvusClient;
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  globalForMilvus.milvusClient = milvusClient;
-}
+  const client = createMilvusClient();
+  if (process.env.NODE_ENV !== "production") {
+    globalForMilvus.milvusClient = client;
+  }
+  return client;
+};
 
 const ensureMilvusCollectionLoaded = async () => {
   if (globalForMilvus.milvusLoadPromise) {
@@ -33,6 +39,7 @@ const ensureMilvusCollectionLoaded = async () => {
   }
 
   globalForMilvus.milvusLoadPromise = (async () => {
+    const milvusClient = getMilvusClient();
     await milvusClient.connectPromise;
     await milvusClient.loadCollectionSync({
       collection_name: env.milvusCollectionName,
@@ -71,6 +78,7 @@ export async function searchMilvusByVector(
   vector: number[],
 ): Promise<MilvusSearchResult> {
   const startedAt = Date.now();
+  const milvusClient = getMilvusClient();
   await ensureMilvusCollectionLoaded();
 
   const response = await milvusClient.search({
@@ -91,4 +99,3 @@ export async function searchMilvusByVector(
     hits: normalizeHits(response.results),
   };
 }
-

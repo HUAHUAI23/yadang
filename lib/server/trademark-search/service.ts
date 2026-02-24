@@ -13,7 +13,6 @@ import {
   type EffectivePrice,
   getEffectiveSearchPrice,
 } from "@/lib/server/trademark-search/pricing";
-import { resolveSearchResults } from "@/lib/server/trademark-search/repository";
 import type {
   MilvusSearchResult,
   SearchRecordPayload,
@@ -205,6 +204,9 @@ export class TrademarkSearchService {
 
       vectorized = await this.deps.vectorize(decoded.buffer, decoded.mimeType);
       milvus = await searchMilvusByVector(vectorized.vector);
+      const { resolveSearchResults } = await import(
+        "@/lib/server/trademark-search/repository"
+      );
       resolved = await resolveSearchResults(milvus);
       if (!effectivePrice || !uploadedImage || !vectorized || !milvus || !resolved) {
         throw new Error("检索状态异常");
