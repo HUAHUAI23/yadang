@@ -1,0 +1,82 @@
+import type { Prisma } from "@/prisma/generated/business/client";
+import { TransactionType } from "@/prisma/generated/business/enums";
+
+import "server-only";
+
+const ZERO = BigInt(0);
+
+type AccountChangeInput = {
+  userId: number;
+  accountId: number;
+  type: TransactionType;
+  delta: bigint;
+  description?: string;
+  bizId?: string;
+  metadata?: Prisma.InputJsonValue;
+};
+
+type AccountChangeResult = {
+  transactionId: bigint;
+  balanceBefore: bigint;
+  balanceAfter: bigint;
+};
+
+const toSafeBigInt = (value: bigint | number) => {
+  if (typeof value === "bigint") return value;
+  return BigInt(value);
+};
+
+export async function applyAccountChange(
+  tx: Prisma.TransactionClient,
+  input: AccountChangeInput,
+): Promise<AccountChangeResult> {
+  if (input.delta === ZERO) {
+    throw new Error("账户变更金额不能为 0");
+  }
+
+  const rows = await tx.$queryRaw<Array<{ balance: bigint | number }>>`
+    SELECT balance
+    FROM Account
+    WHERE id = ${input.accountId}
+      AND userId = ${input.userId}
+    FOR UPDATE
+  `;
+
+  const row = rows[0];
+  if (!row) {
+    throw new Error("账户不存在");
+  }
+
+  const balanceBefore = toSafeBigInt(row.balance);
+  const balanceAfter = balanceBefore + input.delta;
+
+  if (balanceAfter < ZERO) {
+    throw new Error("余额不足");
+  }
+
+  await tx.account.update({
+    where: { id: input.accountId },
+    data: { balance: balanceAfter },
+  });
+
+  const transaction = await tx.transaction.create({
+    data: {
+      userId: input.userId,
+      accountId: input.accountId,
+      type: input.type,
+      amount: input.delta,
+      balanceBefore,
+      balanceAfter,
+      description: input.description,
+      bizId: input.bizId,
+      metadata: input.metadata,
+    },
+    select: { id: true },
+  });
+
+  return {
+    transactionId: transaction.id,
+    balanceBefore,
+    balanceAfter,
+  };
+}

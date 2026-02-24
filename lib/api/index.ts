@@ -1,30 +1,31 @@
 import { request } from "@/lib/api/client";
-import {
-  mockClearHistory,
-  mockRecharge,
-  mockSearch,
-} from "@/lib/api/mock";
 import type {
   ApiResponse,
   AuthConfig,
   AuthResult,
   PasswordLoginPayload,
+  RechargeResult,
   RegisterPayload,
-  SearchConfig,
+  SearchHistoryItem,
+  SearchPrice,
   SearchResponse,
   SmsLoginPayload,
   SmsSendPayload,
 } from "@/lib/types";
 
 export const api = {
-  search: (payload: {
-    imageBase64: string;
-    config: SearchConfig;
-  }): Promise<ApiResponse<SearchResponse>> =>
+  search: (payload: { imageBase64: string }): Promise<ApiResponse<SearchResponse>> =>
     request("/api/search", {
       method: "POST",
       body: payload,
-      mock: () => mockSearch(payload.imageBase64, payload.config),
+    }),
+  searchPrice: (): Promise<ApiResponse<SearchPrice>> =>
+    request("/api/search/price", {
+      method: "GET",
+    }),
+  searchHistory: (): Promise<ApiResponse<{ items: SearchHistoryItem[] }>> =>
+    request("/api/search/history", {
+      method: "GET",
     }),
   authLoginPassword: (
     payload: PasswordLoginPayload
@@ -62,15 +63,13 @@ export const api = {
       method: "POST",
       body: payload,
     }),
-  recharge: (packageId: string) =>
+  recharge: (packageId: string): Promise<ApiResponse<RechargeResult>> =>
     request("/api/recharge", {
       method: "POST",
       body: { packageId },
-      mock: () => mockRecharge(packageId),
     }),
-  clearHistory: () =>
+  clearHistory: (): Promise<ApiResponse<{ ok: boolean }>> =>
     request("/api/history/clear", {
       method: "POST",
-      mock: () => mockClearHistory(),
     }),
 };

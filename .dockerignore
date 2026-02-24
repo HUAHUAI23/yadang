@@ -1,0 +1,35 @@
+# dependencies
+node_modules
+
+# build outputs
+.next
+out
+dist
+build
+coverage
+
+# local env and logs
+.env
+.env.*
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vcs
+.git
+.gitignore
+
+# docs and local work dirs
+helloagents
+tmp
+doc
+
+# editor/system
+.vscode
+.DS_Store
+
+# cache
+*.tsbuildinfo
+.pnpm-store

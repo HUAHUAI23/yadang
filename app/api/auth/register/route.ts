@@ -1,9 +1,10 @@
 import { assertAuthMethodEnabled, getAuthConfig } from "@/lib/auth/config";
 import { setSessionCookie,signSessionToken } from "@/lib/auth/jwt";
 import { hashPassword } from "@/lib/auth/password";
-import { toAuthUser } from "@/lib/auth/user";
+import { toAuthAccount, toAuthUser } from "@/lib/auth/user";
 import { formatPurpose, verifySmsCode } from "@/lib/auth/verification";
 import { businessPrisma } from "@/lib/db/business";
+import { env } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/server/response";
 import { registerPayloadSchema } from "@/lib/validation/auth";
 
@@ -47,18 +48,32 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hashPassword(password);
-  const user = await businessPrisma.user.create({
-    data: {
-      username,
-      phone,
-      passwordHash,
-    },
+  const created = await businessPrisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        username,
+        phone,
+        passwordHash,
+      },
+    });
+
+    const account = await tx.account.create({
+      data: {
+        userId: user.id,
+        balance: BigInt(env.initialAccountBalance),
+      },
+    });
+
+    return { user, account };
   });
 
-  const token = await signSessionToken(user.id);
+  const token = await signSessionToken(created.user.id);
   await setSessionCookie(token);
 
-  return jsonOk({ user: toAuthUser(user) });
+  return jsonOk({
+    user: toAuthUser(created.user),
+    account: toAuthAccount(created.account),
+  });
 }
 
 export const runtime = "nodejs";

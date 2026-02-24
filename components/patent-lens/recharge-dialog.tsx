@@ -85,7 +85,7 @@ export default function RechargeDialog({
             <ul className="text-xs text-slate-500 space-y-2 font-medium">
               <li className="flex items-center">
                 <span className="w-1 h-1 bg-slate-300 rounded-full mr-2" />
-                单次检索扣除 20-30 积分
+                单次检索按账户实时价格扣费
               </li>
               <li className="flex items-center">
                 <span className="w-1 h-1 bg-slate-300 rounded-full mr-2" />

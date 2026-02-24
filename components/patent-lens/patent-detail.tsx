@@ -10,11 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { PatentResult } from "@/lib/types";
-import { SearchType } from "@/lib/types";
+import type { TrademarkResultItem } from "@/lib/types";
 
 interface PatentDetailProps {
-  item: PatentResult | null;
+  item: TrademarkResultItem | null;
   onClose: () => void;
 }
 
@@ -31,6 +30,7 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                   alt={item.title}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
+                  unoptimized
                   className="object-contain drop-shadow-xl"
                 />
               </div>
@@ -47,14 +47,8 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
               </DialogHeader>
 
               <div className="flex items-center space-x-2 mt-6">
-                <span
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    item.type === SearchType.DESIGN_PATENT
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-purple-100 text-purple-700"
-                  }`}
-                >
-                  {item.type === SearchType.DESIGN_PATENT ? "外观专利" : "商标"}
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
+                  商标图搜
                 </span>
                 <span className="text-xs font-bold text-gray-400">
                   {item.status || "Active"}

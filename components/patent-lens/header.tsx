@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { CreditsState } from "@/lib/types";
+import type { AccountState } from "@/lib/types";
 
 interface HeaderProps {
-  credits: CreditsState;
+  account: AccountState | null;
   onOpenRecharge: () => void;
   isAuthenticated: boolean;
   onLogout: () => void;
@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 export default function Header({
-  credits,
+  account,
   onOpenRecharge,
   isAuthenticated,
   onLogout,
@@ -56,10 +56,10 @@ export default function Header({
                   <div className="flex items-center space-x-1.5 mt-0.5">
                     <span
                       className={`text-lg font-[900] ${
-                        credits.balance < 20 ? "text-rose-500" : "text-slate-900"
+                        (account?.balance ?? 0) < 20 ? "text-rose-500" : "text-slate-900"
                       }`}
                     >
-                      {credits.balance.toLocaleString()}
+                      {(account?.balance ?? 0).toLocaleString()}
                     </span>
                     <span className="text-[10px] font-bold text-slate-400">
                       PTS

@@ -1,8 +1,9 @@
 import { assertAuthMethodEnabled } from "@/lib/auth/config";
 import { setSessionCookie,signSessionToken } from "@/lib/auth/jwt";
-import { toAuthUser } from "@/lib/auth/user";
+import { toAuthAccount, toAuthUser } from "@/lib/auth/user";
 import { formatPurpose, verifySmsCode } from "@/lib/auth/verification";
 import { businessPrisma } from "@/lib/db/business";
+import { env } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/server/response";
 import { loginSmsSchema } from "@/lib/validation/auth";
 
@@ -41,7 +42,32 @@ export async function POST(request: Request) {
   const token = await signSessionToken(user.id);
   await setSessionCookie(token);
 
-  return jsonOk({ user: toAuthUser(user) });
+  let account = await businessPrisma.account.findUnique({
+    where: { userId: user.id },
+  });
+  if (!account) {
+    try {
+      account = await businessPrisma.account.create({
+        data: {
+          userId: user.id,
+          balance: BigInt(env.initialAccountBalance),
+        },
+      });
+    } catch {
+      account = await businessPrisma.account.findUnique({
+        where: { userId: user.id },
+      });
+    }
+  }
+
+  if (!account) {
+    return jsonError(500, "账户初始化失败");
+  }
+
+  return jsonOk({
+    user: toAuthUser(user),
+    account: toAuthAccount(account),
+  });
 }
 
 export const runtime = "nodejs";

@@ -1,20 +1,25 @@
 import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
-import { toAuthAccount, toAuthUser } from "@/lib/auth/user";
 import { jsonError, jsonOk } from "@/lib/server/response";
+import { getEffectiveSearchPrice } from "@/lib/server/trademark-search/pricing";
+import { bigIntToNumber } from "@/lib/server/trademark-search/utils";
 
 export async function GET() {
   try {
     const session = await resolveSessionContext({ createAccountIfMissing: true });
+    const price = await getEffectiveSearchPrice(session.user.id);
+
     return jsonOk({
-      user: toAuthUser(session.user),
-      account: toAuthAccount(session.account),
+      code: price.code,
+      amount: bigIntToNumber(price.amount),
+      balance: bigIntToNumber(session.account.balance),
     });
   } catch (error) {
     if (error instanceof AuthSessionError) {
       return jsonError(error.status, error.message);
     }
-    return jsonError(500, (error as Error).message ?? "获取会话失败");
+    return jsonError(500, (error as Error).message ?? "获取价格失败");
   }
 }
 
 export const runtime = "nodejs";
+

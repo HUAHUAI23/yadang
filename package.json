@@ -14,6 +14,8 @@
     "prisma:business:migrate:deploy": "prisma migrate deploy --config=prisma/business/prisma.config.ts",
     "prisma:business:studio": "prisma studio --config=prisma/business/prisma.config.ts",
     "auth:config:init": "tsx --env-file=.env scripts/init-auth-method-config.ts",
+    "search:config:init": "tsx --env-file=.env scripts/init-trademark-search-config.ts",
+    "system:config:init": "pnpm auth:config:init && pnpm search:config:init",
     "prisma:external:pull": "prisma db pull --config=prisma/external/prisma.config.ts",
     "prisma:external:generate": "prisma generate --config=prisma/external/prisma.config.ts",
     "prisma:external:studio": "prisma studio --config=prisma/external/prisma.config.ts"
@@ -55,6 +57,8 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-query-devtools": "^5.91.3",
+    "@zilliz/milvus2-sdk-node": "^2.6.10",
+    "ali-oss": "^6.23.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

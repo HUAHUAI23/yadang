@@ -126,7 +126,7 @@ const resolveSslOptions = (label: AdapterLabel) => {
     if (caPath) {
       try {
         ssl.ca = fs.readFileSync(caPath);
-      } catch (error) {
+      } catch (_error) {
         throw new Error(
           `Failed to read SSL CA file for ${label}: ${caPath}`,
         );

@@ -1,19 +1,14 @@
 import type { ApiResponse } from "@/lib/types";
 
-type RequestOptions<T> = {
+type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
-  mock?: () => Promise<ApiResponse<T>>;
 };
 
 export async function request<T>(
   path: string,
-  options: RequestOptions<T> = {}
+  options: RequestOptions = {}
 ): Promise<ApiResponse<T>> {
-  if (options.mock) {
-    return options.mock();
-  }
-
   const response = await fetch(path, {
     method: options.method ?? "GET",
     credentials: "include",

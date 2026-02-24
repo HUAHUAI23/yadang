@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import AuthDialog from "@/components/patent-lens/auth-dialog";
 import Footer from "@/components/patent-lens/footer";
@@ -12,102 +12,125 @@ import RechargeDialog from "@/components/patent-lens/recharge-dialog";
 import SearchResults from "@/components/patent-lens/search-results";
 import UploadSection from "@/components/patent-lens/upload-section";
 import { api } from "@/lib/api";
-import {
-  SEARCH_COST_BOTH,
-  SEARCH_COST_SINGLE,
-} from "@/lib/constants";
-import type { PatentResult, SearchConfig, SearchResponse } from "@/lib/types";
+import type { SearchHistoryItem, TrademarkResultItem } from "@/lib/types";
 import { usePatentLensStore } from "@/stores/patent-lens";
-
-const initialConfig: SearchConfig = { patents: true, trademarks: true };
-
-const calculateCost = (config: SearchConfig) => {
-  if (config.patents && config.trademarks) return SEARCH_COST_BOTH;
-  if (config.patents || config.trademarks) return SEARCH_COST_SINGLE;
-  return 0;
-};
 
 export default function AppShell() {
   const [preview, setPreview] = useState<string | null>(null);
-  const [searchConfig, setSearchConfig] = useState<SearchConfig>(initialConfig);
+  const [searchPrice, setSearchPrice] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<SearchResponse>({
-    patents: [],
-    trademarks: [],
-  });
-  const [selectedItem, setSelectedItem] = useState<PatentResult | null>(null);
+  const [results, setResults] = useState<TrademarkResultItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<TrademarkResultItem | null>(null);
   const [isRechargeOpen, setIsRechargeOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const {
     isAuthenticated,
-    credits,
+    account,
     setSession,
-    logout,
-    debitCredits,
-    rechargeCredits,
+    setBalance,
     history,
-    addHistory,
-    clearHistory,
+    setHistory,
+    prependHistory,
+    clearHistoryLocal,
+    logout,
   } = usePatentLensStore();
 
-  const cost = useMemo(() => calculateCost(searchConfig), [searchConfig]);
+  const loadDashboard = useCallback(async () => {
+    const [priceRes, historyRes] = await Promise.all([
+      api.searchPrice(),
+      api.searchHistory(),
+    ]);
+
+    if (priceRes.code === 0 && priceRes.data) {
+      setSearchPrice(priceRes.data.amount);
+      setBalance(priceRes.data.balance);
+    }
+
+    if (historyRes.code === 0 && historyRes.data) {
+      setHistory(historyRes.data.items);
+    }
+  }, [setBalance, setHistory]);
+
+  const reloadHistory = useCallback(async () => {
+    const historyRes = await api.searchHistory();
+    if (historyRes.code === 0 && historyRes.data) {
+      setHistory(historyRes.data.items);
+    }
+  }, [setHistory]);
 
   useEffect(() => {
     let active = true;
+
     api
       .authMe()
-      .then((response) => {
+      .then(async (response) => {
         if (!active) return;
-        if (response.code === 0 && response.data) {
-          setSession({
-            user: response.data.user,
-          });
-        } else {
-          setSession({ user: null });
+        if (response.code !== 0 || !response.data) {
+          setSession({ user: null, account: null });
+          return;
         }
+
+        setSession({
+          user: response.data.user,
+          account: response.data.account,
+        });
+        await loadDashboard();
       })
-      .catch(() => setSession({ user: null }));
+      .catch(() => setSession({ user: null, account: null }));
 
     return () => {
       active = false;
     };
-  }, [setSession]);
+  }, [loadDashboard, setSession]);
 
-  const handleSearch = async (base64: string, config: SearchConfig) => {
+  const handleSearch = async (base64: string) => {
     if (!isAuthenticated) {
       setIsAuthOpen(true);
       return;
     }
 
-    const requestCost = calculateCost(config);
-    if (credits.balance < requestCost) {
+    if (!base64.startsWith("data:image/")) {
+      window.alert("历史图片仅用于回看，请重新上传后发起检索。");
+      return;
+    }
+
+    const balance = account?.balance ?? 0;
+    if (balance < searchPrice) {
       setIsRechargeOpen(true);
       return;
     }
 
     setIsLoading(true);
-    setResults({ patents: [], trademarks: [] });
+    setResults([]);
 
     try {
-      const response = await api.search({ imageBase64: base64, config });
-      if (response.code !== 0) {
+      const response = await api.search({ imageBase64: base64 });
+      if (response.code !== 0 || !response.data) {
+        await reloadHistory();
+        if (response.code === 402) {
+          setIsRechargeOpen(true);
+        }
         window.alert(response.message ?? "检索失败，请稍后再试。");
         return;
       }
 
-      setResults(response.data);
-      debitCredits(requestCost);
+      setResults(response.data.results);
+      setPreview(response.data.queryImageUrl);
+      setBalance(response.data.balance);
 
-      addHistory({
-        id: Date.now().toString(),
+      const newHistoryItem: SearchHistoryItem = {
+        id: response.data.searchId,
         timestamp: Date.now(),
-        thumbnail: base64,
-        config: { ...config },
-        cost: requestCost,
-        results: response.data,
-      });
+        queryImageUrl: response.data.queryImageUrl,
+        cost: response.data.cost,
+        status: "SUCCESS",
+        resultCount: response.data.resultCount,
+        results: response.data.results,
+      };
+      prependHistory(newHistoryItem);
     } catch (error) {
+      await reloadHistory();
       console.error("Search failed:", error);
       window.alert("检索失败，请稍后再试。");
     } finally {
@@ -117,31 +140,24 @@ export default function AppShell() {
 
   const handleRecharge = async (packageId: string) => {
     const response = await api.recharge(packageId);
-    if (response.code !== 0) {
+    if (response.code !== 0 || !response.data) {
       window.alert(response.message ?? "充值失败，请稍后再试。");
       return;
     }
 
-    rechargeCredits(response.data.credits, response.data.amount);
+    setBalance(response.data.balance);
     setIsRechargeOpen(false);
     window.alert(`充值成功！已增加 ${response.data.credits} 积分。`);
   };
 
-  const handleSelectHistoryItem = (item: {
-    thumbnail: string;
-    config: SearchConfig;
-    results: SearchResponse;
-  }) => {
-    setPreview(item.thumbnail);
-    setSearchConfig(item.config);
+  const handleSelectHistoryItem = (item: SearchHistoryItem) => {
+    setPreview(item.queryImageUrl);
     setResults(item.results);
 
     setTimeout(() => {
       const resultsEl = document.getElementById("search-results-anchor");
       if (resultsEl) {
         resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        window.scrollTo({ top: 400, behavior: "smooth" });
       }
     }, 100);
   };
@@ -155,15 +171,15 @@ export default function AppShell() {
       window.alert(response.message ?? "清空失败，请稍后再试。");
       return;
     }
-    clearHistory();
+    clearHistoryLocal();
   };
 
   const handleLogout = () => {
     api.authLogout().catch(() => null);
     logout();
-    setResults({ patents: [], trademarks: [] });
+    setResults([]);
     setPreview(null);
-    setSearchConfig(initialConfig);
+    setSearchPrice(0);
   };
 
   return (
@@ -172,7 +188,7 @@ export default function AppShell() {
       <div className="nebula-2" />
 
       <Header
-        credits={credits}
+        account={account}
         onOpenRecharge={() =>
           isAuthenticated ? setIsRechargeOpen(true) : setIsAuthOpen(true)
         }
@@ -195,20 +211,14 @@ export default function AppShell() {
             <UploadSection
               onSearch={handleSearch}
               isLoading={isLoading}
-              currentBalance={credits.balance}
+              currentBalance={account?.balance ?? 0}
               preview={preview}
               setPreview={setPreview}
-              searchConfig={searchConfig}
-              setSearchConfig={setSearchConfig}
-              cost={cost}
+              cost={searchPrice}
             />
 
             <div id="search-results-anchor" className="scroll-mt-24">
-              <SearchResults
-                patents={results.patents}
-                trademarks={results.trademarks}
-                onSelect={setSelectedItem}
-              />
+              <SearchResults results={results} onSelect={setSelectedItem} />
             </div>
 
             <Footer />
@@ -228,7 +238,13 @@ export default function AppShell() {
         <AuthDialog
           open={isAuthOpen}
           onOpenChange={setIsAuthOpen}
-          onSuccess={(result) => setSession({ user: result.user })}
+          onSuccess={async (result) => {
+            setSession({
+              user: result.user,
+              account: result.account,
+            });
+            await loadDashboard();
+          }}
         />
       )}
     </div>

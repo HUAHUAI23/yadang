@@ -175,6 +175,110 @@ class EnvConfig {
   get externalDbSslRejectUnauthorized() {
     return this.boolean("EXTERNAL_DB_SSL_REJECT_UNAUTHORIZED");
   }
+
+  get aliyunOssAccessKeyId() {
+    return this.requiredAny([
+      "ALIYUN_OSS_ACCESS_KEY_ID",
+      "ALIYUN_OSS_ACCESS_KEY",
+      "ALIYUN_SMS_ACCESS_KEY_ID",
+      "ALIBABA_CLOUD_ACCESS_KEY_ID",
+    ]);
+  }
+
+  get aliyunOssAccessKeySecret() {
+    return this.requiredAny([
+      "ALIYUN_OSS_ACCESS_KEY_SECRET",
+      "ALIYUN_OSS_SECRET_ACCESS_KEY",
+      "ALIYUN_SMS_ACCESS_KEY_SECRET",
+      "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+    ]);
+  }
+
+  get aliyunOssRegion() {
+    return this.required("ALIYUN_OSS_REGION");
+  }
+
+  get aliyunOssBucket() {
+    return this.required("ALIYUN_OSS_BUCKET");
+  }
+
+  get aliyunOssEndpoint() {
+    return this.optionalString("ALIYUN_OSS_ENDPOINT");
+  }
+
+  get aliyunOssSignedUrlExpiresSeconds() {
+    return this.number("ALIYUN_OSS_SIGNED_URL_EXPIRES_SECONDS", 300);
+  }
+
+  get aliyunOssUploadPrefix() {
+    return this.optional("ALIYUN_OSS_UPLOAD_PREFIX", "trademark-search/uploads");
+  }
+
+  get milvusAddress() {
+    return this.required("MILVUS_ADDRESS");
+  }
+
+  get milvusUsername() {
+    return this.optional("MILVUS_USERNAME", "root");
+  }
+
+  get milvusPassword() {
+    return this.optional("MILVUS_PASSWORD", "Milvus");
+  }
+
+  get milvusToken() {
+    return this.optionalString("MILVUS_TOKEN");
+  }
+
+  get milvusCollectionName() {
+    return this.optional(
+      "MILVUS_COLLECTION_NAME",
+      "patent_design_milvus_dinov3_vitl16_300m_duplicated",
+    );
+  }
+
+  get milvusVectorField() {
+    return this.optional("MILVUS_VECTOR_FIELD", "vector");
+  }
+
+  get milvusTopK() {
+    return this.number("MILVUS_TOP_K", 60);
+  }
+
+  get milvusMetricType() {
+    return this.optional("MILVUS_METRIC_TYPE", "L2");
+  }
+
+  get milvusSearchParams() {
+    return this.optionalString("MILVUS_SEARCH_PARAMS");
+  }
+
+  get vectorApiEndpoint() {
+    return this.optional("VECTOR_API_ENDPOINT", "https://example.com/vectorize");
+  }
+
+  get vectorApiKey() {
+    return this.optionalString("VECTOR_API_KEY");
+  }
+
+  get vectorApiTimeoutMs() {
+    return this.number("VECTOR_API_TIMEOUT_MS", 15000);
+  }
+
+  get vectorModelId() {
+    return this.optional(
+      "VECTOR_MODEL_ID",
+      "facebook/dinov3_vitl16_pretrain_lvd1689m",
+    );
+  }
+
+  get vectorDimension() {
+    return this.number("VECTOR_DIMENSION", 1024);
+  }
+
+  get initialAccountBalance() {
+    return this.number("INITIAL_ACCOUNT_BALANCE", 100);
+  }
 }
 
 export const env = new EnvConfig();
