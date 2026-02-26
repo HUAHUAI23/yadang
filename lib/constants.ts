@@ -24,7 +24,14 @@ export const LANDING_CAROUSEL = [
   },
 ];
 
-export const LANDING_FEATURES = [
+type LandingFeature = {
+  title: string;
+  desc: string;
+  icon: string;
+  color: "blue" | "purple" | "indigo";
+};
+
+export const LANDING_FEATURES: LandingFeature[] = [
   {
     title: "毫秒级视觉识别",
     desc: "基于超大规模视觉特征向量模型，捕捉设计最细微的相似点。",
