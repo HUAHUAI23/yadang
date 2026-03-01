@@ -1,5 +1,4 @@
 import { externalPrisma } from "@/lib/db/external";
-import { normalizeMilvusImageObjectKey, signResultImageUrl } from "@/lib/server/trademark-search/oss";
 import type {
   MilvusSearchResult,
   PatentDesignMatch,
@@ -42,13 +41,17 @@ export async function resolveSearchResults(
 ): Promise<SearchRecordPayload> {
   const publicationNumbers = new Set<string>();
   const serialNums = new Set<string>();
+  const serialNumsWithPrefix = new Set<string>();
 
   for (const hit of milvus.hits) {
     const publication = extractPublicationNumber(hit.imageName);
     if (publication) publicationNumbers.add(publication);
 
     const serial = normalizeSerialNum(hit.serialNum);
-    if (serial) serialNums.add(serial);
+    if (serial) {
+      serialNums.add(serial);
+      serialNumsWithPrefix.add(`D${serial}`);
+    }
   }
 
   const orConditions: Array<Record<string, unknown>> = [];
@@ -59,7 +62,7 @@ export async function resolveSearchResults(
   }
   if (serialNums.size > 0) {
     orConditions.push({
-      numberWithoutCodes: { in: Array.from(serialNums) },
+      numberWithoutCodes: { in: Array.from(serialNumsWithPrefix) },
     });
   }
 
@@ -95,8 +98,9 @@ export async function resolveSearchResults(
     if (usedPublication.has(record.publicationNumber)) continue;
     usedPublication.add(record.publicationNumber);
 
-    const normalizedObjectKey = normalizeMilvusImageObjectKey(hit.imageName);
-    const imageUrl = await signResultImageUrl(normalizedObjectKey);
+    const imageList = parseImageList(record.imageList);
+    const imageUrl = imageList[0];
+    if (!imageUrl) continue;
     const similarityScore = Number(
       (1 / (1 + Math.max(hit.distance, 0))).toFixed(6),
     );
@@ -108,7 +112,7 @@ export async function resolveSearchResults(
       filingDate: formatDate(record.filingDate),
       issueDate: formatDate(record.publicationDate),
       description: buildDescription(record),
-      imageList: parseImageList(record.imageList),
+      imageList,
     });
 
     results.push({
@@ -126,7 +130,7 @@ export async function resolveSearchResults(
       distance: hit.distance,
       serialNum: serial || normalizeSerialNum(record.numberWithoutCodes ?? ""),
       imageName: hit.imageName,
-      imageList: parseImageList(record.imageList),
+      imageList,
     });
   }
 

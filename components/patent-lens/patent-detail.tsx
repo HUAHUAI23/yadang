@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,36 @@ interface PatentDetailProps {
 }
 
 export default function PatentDetail({ item, onClose }: PatentDetailProps) {
+  const galleryImages = useMemo(() => {
+    if (!item) return [] as string[];
+
+    const dedup = new Set<string>();
+    const images: string[] = [];
+
+    const append = (url: string | undefined) => {
+      if (!url) return;
+      const normalized = url.trim();
+      if (!normalized || dedup.has(normalized)) return;
+      dedup.add(normalized);
+      images.push(normalized);
+    };
+
+    item.imageList?.forEach((url) => append(url));
+    append(item.imageUrl);
+
+    return images;
+  }, [item]);
+
+  const [activeImage, setActiveImage] = useState("");
+
+  useEffect(() => {
+    if (!item) {
+      setActiveImage("");
+      return;
+    }
+    setActiveImage(galleryImages[0] ?? item.imageUrl);
+  }, [galleryImages, item]);
+
   return (
     <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl overflow-hidden p-0">
@@ -26,7 +57,7 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
             <div className="md:w-1/2 bg-gray-50 p-8 flex items-center justify-center">
               <div className="relative w-full h-[60vh] max-h-[70vh]">
                 <Image
-                  src={item.imageUrl}
+                  src={activeImage || item.imageUrl}
                   alt={item.title}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -99,18 +130,17 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                 </p>
               </div>
 
-              {item.imageList?.length ? (
+              {galleryImages.length ? (
                 <div className="mt-8">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-3">
-                    专利原图集
+                    专利原图集（共 {galleryImages.length} 张）
                   </label>
                   <div className="grid grid-cols-4 gap-3">
-                    {item.imageList.slice(0, 8).map((url, index) => (
-                      <a
+                    {galleryImages.map((url, index) => (
+                      <button
                         key={`${item.id}-${index}`}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
+                        type="button"
+                        onClick={() => setActiveImage(url)}
                         className="relative block h-20 rounded-xl border border-gray-200 overflow-hidden bg-gray-100"
                         title={`查看原图 ${index + 1}`}
                       >
@@ -122,7 +152,10 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                           unoptimized
                           className="object-cover"
                         />
-                      </a>
+                        {activeImage === url ? (
+                          <span className="absolute inset-0 ring-2 ring-blue-500 ring-inset" />
+                        ) : null}
+                      </button>
                     ))}
                   </div>
                 </div>

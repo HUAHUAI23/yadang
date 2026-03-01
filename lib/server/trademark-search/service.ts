@@ -4,11 +4,7 @@ import { businessPrisma } from "@/lib/db/business";
 import { env } from "@/lib/env";
 import { applyAccountChange } from "@/lib/server/trademark-search/account-ledger";
 import { searchMilvusByVector } from "@/lib/server/trademark-search/milvus";
-import {
-  normalizeMilvusImageObjectKey,
-  signResultImageUrl,
-  uploadSearchImage,
-} from "@/lib/server/trademark-search/oss";
+import { signResultImageUrl, uploadSearchImage } from "@/lib/server/trademark-search/oss";
 import {
   type EffectivePrice,
   getEffectiveSearchPrice,
@@ -76,24 +72,15 @@ const parseResultsFromJson = (value: unknown): TrademarkResultItem[] => {
   return value as TrademarkResultItem[];
 };
 
-const resignResultImages = async (items: TrademarkResultItem[]) => {
-  return Promise.all(items.map(async (item) => {
-    if (!item.imageName) return item;
-    let objectKey = "";
-    try {
-      objectKey = normalizeMilvusImageObjectKey(item.imageName);
-    } catch {
-      return item;
-    }
-
-    if (!objectKey) return item;
-
-    const imageUrl = await signResultImageUrl(objectKey);
+const hydrateResultImages = (items: TrademarkResultItem[]) => {
+  return items.map((item) => {
+    const primaryImageUrl = item.imageList?.[0];
+    if (!primaryImageUrl) return item;
     return {
       ...item,
-      imageUrl,
+      imageUrl: primaryImageUrl,
     };
-  }));
+  });
 };
 
 export class TrademarkSearchService {
@@ -345,7 +332,7 @@ export class TrademarkSearchService {
         cost: bigIntToNumber(record.searchPriceAmount),
         status: record.status,
         resultCount: record.resultCount,
-        results: await resignResultImages(parseResultsFromJson(record.responseItems)),
+        results: hydrateResultImages(parseResultsFromJson(record.responseItems)),
       };
     }));
   }

@@ -215,10 +215,7 @@ class EnvConfig {
   }
 
   get milvusCollectionName() {
-    return this.optional(
-      "MILVUS_COLLECTION_NAME",
-      "patent_design_milvus_dinov3_vitl16_300m_duplicated",
-    );
+    return this.required("MILVUS_COLLECTION_NAME");
   }
 
   get milvusVectorField() {

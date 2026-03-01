@@ -1,4 +1,7 @@
-import { businessPrisma } from "../lib/db/business"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
+
+import { resolveDatabaseOptions } from "../lib/db/db-url"
+import { Prisma, PrismaClient } from "../prisma/generated/business/client"
 import { SearchPriceCode } from "../prisma/generated/business/enums"
 
 /**
@@ -10,8 +13,31 @@ import { SearchPriceCode } from "../prisma/generated/business/enums"
  * 每个 code 必须有对应的配置
  */
 
+const DB_ENV_KEY = "BUSINESS_DATABASE_URL"
 const PRICE_ENV_KEY = "TRADEMARK_SEARCH_GLOBAL_PRICE"
 const DEFAULT_GLOBAL_PRICE = 20
+
+const resolveDatabaseUrl = () => {
+  const value = process.env[DB_ENV_KEY]
+  if (!value) {
+    throw new Error(`Missing env: ${DB_ENV_KEY}`)
+  }
+  return value
+}
+
+const businessPrisma = new PrismaClient({
+  adapter: new PrismaMariaDb(
+    resolveDatabaseOptions(resolveDatabaseUrl(), "BUSINESS_DATABASE_URL"),
+    {
+      onConnectionError: (error) => {
+        const err = error as { message?: string; code?: string } | null
+        const code = err?.code ? ` (${err.code})` : ""
+        const message = err?.message ?? "Unknown connection error"
+        console.error(`[BUSINESS_DATABASE_URL] MariaDB connection error${code}: ${message}`)
+      },
+    },
+  ),
+})
 
 function resolveTargetPrice(): bigint {
   const raw = process.env[PRICE_ENV_KEY]
@@ -115,6 +141,25 @@ async function main() {
     await initTrademarkSearchConfig()
     process.exitCode = 0
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2021" &&
+      error.meta &&
+      typeof error.meta === "object" &&
+      "modelName" in error.meta &&
+      error.meta.modelName === "SearchPrice"
+    ) {
+      console.error(
+        [
+          "Error initializing trademark search config: 数据表 SearchPrice 不存在。",
+          "请先同步 business 库结构，再重新执行初始化脚本：",
+          "1) 开发环境（推荐）: pnpm prisma:business:migrate:dev",
+          "2) 仅快速对齐 schema: pnpm prisma db push --config=prisma/business/prisma.config.ts",
+        ].join("\n"),
+      )
+      process.exitCode = 1
+      return
+    }
     console.error("Error initializing trademark search config:", error)
     process.exitCode = 1
   } finally {
