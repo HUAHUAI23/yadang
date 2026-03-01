@@ -17,6 +17,7 @@ export interface TrademarkResultItem {
   distance: number;
   serialNum: string;
   imageName: string;
+  imageList?: string[];
 }
 
 export interface SearchHistoryItem {
@@ -107,4 +108,3 @@ export type AuthResult = {
   user: AuthUser;
   account: AccountState;
 };
-

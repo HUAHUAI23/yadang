@@ -99,6 +99,35 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                 </p>
               </div>
 
+              {item.imageList?.length ? (
+                <div className="mt-8">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-3">
+                    专利原图集
+                  </label>
+                  <div className="grid grid-cols-4 gap-3">
+                    {item.imageList.slice(0, 8).map((url, index) => (
+                      <a
+                        key={`${item.id}-${index}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="relative block h-20 rounded-xl border border-gray-200 overflow-hidden bg-gray-100"
+                        title={`查看原图 ${index + 1}`}
+                      >
+                        <Image
+                          src={url}
+                          alt={`${item.title}-source-${index + 1}`}
+                          fill
+                          sizes="80px"
+                          unoptimized
+                          className="object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="mt-10 flex space-x-4">
                 <Button className="flex-1 bg-gray-900 hover:bg-black text-white py-4 rounded-2xl font-bold transition-all uppercase text-xs tracking-widest">
                   查看官方详情

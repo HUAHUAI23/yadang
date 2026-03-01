@@ -99,17 +99,11 @@ class EnvConfig {
   }
 
   get aliyunSmsAccessKeyId() {
-    return this.requiredAny([
-      "ALIYUN_SMS_ACCESS_KEY_ID",
-      "ALIBABA_CLOUD_ACCESS_KEY_ID",
-    ]);
+    return this.required("ALIYUN_SMS_ACCESS_KEY_ID");
   }
 
   get aliyunSmsAccessKeySecret() {
-    return this.requiredAny([
-      "ALIYUN_SMS_ACCESS_KEY_SECRET",
-      "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-    ]);
+    return this.required("ALIYUN_SMS_ACCESS_KEY_SECRET");
   }
 
   get aliyunSmsSignName() {
@@ -177,21 +171,11 @@ class EnvConfig {
   }
 
   get aliyunOssAccessKeyId() {
-    return this.requiredAny([
-      "ALIYUN_OSS_ACCESS_KEY_ID",
-      "ALIYUN_OSS_ACCESS_KEY",
-      "ALIYUN_SMS_ACCESS_KEY_ID",
-      "ALIBABA_CLOUD_ACCESS_KEY_ID",
-    ]);
+    return this.required("OSS_ACCESS_KEY_ID");
   }
 
   get aliyunOssAccessKeySecret() {
-    return this.requiredAny([
-      "ALIYUN_OSS_ACCESS_KEY_SECRET",
-      "ALIYUN_OSS_SECRET_ACCESS_KEY",
-      "ALIYUN_SMS_ACCESS_KEY_SECRET",
-      "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-    ]);
+    return this.required("OSS_ACCESS_KEY_SECRET");
   }
 
   get aliyunOssRegion() {
@@ -254,7 +238,7 @@ class EnvConfig {
   }
 
   get vectorApiEndpoint() {
-    return this.optional("VECTOR_API_ENDPOINT", "https://example.com/vectorize");
+    return this.optional("VECTOR_API_ENDPOINT", "http://127.0.0.1:8001/v1/vectorize");
   }
 
   get vectorApiKey() {
@@ -268,7 +252,7 @@ class EnvConfig {
   get vectorModelId() {
     return this.optional(
       "VECTOR_MODEL_ID",
-      "facebook/dinov3_vitl16_pretrain_lvd1689m",
+      "facebook/dinov3-vitl16-pretrain-lvd1689m",
     );
   }
 

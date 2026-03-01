@@ -1,21 +1,18 @@
-import { createHash } from "node:crypto";
-
 import { env } from "@/lib/env";
 import type { VectorizeResult } from "@/lib/server/trademark-search/types";
 
 import "server-only";
 
-const buildMockVector = (buffer: Buffer, dimension: number) => {
-  const digest = createHash("sha256").update(buffer).digest();
-  return Array.from({ length: dimension }, (_, index) => {
-    const byte = digest[index % digest.length] ?? 0;
-    return Number((byte / 255).toFixed(6));
-  });
-};
+const parseVector = (value: unknown) => {
+  if (!Array.isArray(value)) return [];
 
-const shouldUseMockVector = () => {
-  const endpoint = env.vectorApiEndpoint;
-  return endpoint.includes("example.com");
+  return value.map((item) => {
+    const numberValue = Number(item);
+    if (!Number.isFinite(numberValue)) {
+      throw new Error("向量接口返回了非法数值");
+    }
+    return numberValue;
+  });
 };
 
 export async function vectorizeImage(
@@ -24,21 +21,6 @@ export async function vectorizeImage(
 ): Promise<VectorizeResult> {
   const startedAt = Date.now();
   const dimension = env.vectorDimension;
-
-  // Pseudo implementation:
-  // 1) send the image to a standard external embedding API;
-  // 2) parse `vector` from response;
-  // 3) fallback to deterministic mock vector when API is unavailable.
-  if (shouldUseMockVector()) {
-    return {
-      vector: buildMockVector(imageBuffer, dimension),
-      provider: "mock-api",
-      model: env.vectorModelId,
-      dimension,
-      latencyMs: Date.now() - startedAt,
-      raw: { mocked: true, reason: "VECTOR_API_ENDPOINT not configured" },
-    };
-  }
 
   try {
     const response = await fetch(env.vectorApiEndpoint, {
@@ -58,44 +40,55 @@ export async function vectorizeImage(
     });
 
     if (!response.ok) {
-      throw new Error(`向量接口返回异常状态: ${response.status}`);
+      const contentType = response.headers.get("content-type") ?? "";
+      let detail = "";
+      if (contentType.includes("application/json")) {
+        const errorPayload = (await response.json().catch(() => null)) as
+          | { detail?: string; message?: string }
+          | null;
+        detail =
+          errorPayload?.detail?.trim() ??
+          errorPayload?.message?.trim() ??
+          "";
+      } else {
+        detail = (await response.text().catch(() => "")).trim();
+      }
+
+      throw new Error(
+        detail
+          ? `向量接口返回异常状态: ${response.status} - ${detail}`
+          : `向量接口返回异常状态: ${response.status}`,
+      );
     }
 
     const payload = (await response.json()) as {
-      vector?: number[];
+      vector?: unknown;
       model?: string;
       provider?: string;
       [key: string]: unknown;
     };
 
-    const vector = Array.isArray(payload.vector)
-      ? payload.vector.map((item) => Number(item))
-      : [];
+    const vector = parseVector(payload.vector);
 
     if (!vector.length) {
       throw new Error("向量接口返回空向量");
+    }
+
+    if (vector.length !== dimension) {
+      throw new Error(
+        `向量维度不匹配，期望 ${dimension}，实际 ${vector.length}`,
+      );
     }
 
     return {
       vector,
       provider: payload.provider ?? "external-api",
       model: payload.model ?? env.vectorModelId,
-      dimension: vector.length,
+      dimension,
       latencyMs: Date.now() - startedAt,
       raw: payload,
     };
   } catch (error) {
-    return {
-      vector: buildMockVector(imageBuffer, dimension),
-      provider: "mock-api-fallback",
-      model: env.vectorModelId,
-      dimension,
-      latencyMs: Date.now() - startedAt,
-      raw: {
-        mocked: true,
-        reason: (error as Error).message,
-      },
-    };
+    throw new Error(`向量化失败: ${(error as Error).message}`);
   }
 }
-

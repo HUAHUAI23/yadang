@@ -28,6 +28,15 @@ const buildDescription = (record: {
   return chunks.join(" | ") || "暂无公开描述";
 };
 
+const parseImageList = (value: string | null): string[] => {
+  if (!value) return [];
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
 export async function resolveSearchResults(
   milvus: MilvusSearchResult,
 ): Promise<SearchRecordPayload> {
@@ -87,7 +96,7 @@ export async function resolveSearchResults(
     usedPublication.add(record.publicationNumber);
 
     const normalizedObjectKey = normalizeMilvusImageObjectKey(hit.imageName);
-    const imageUrl = signResultImageUrl(normalizedObjectKey);
+    const imageUrl = await signResultImageUrl(normalizedObjectKey);
     const similarityScore = Number(
       (1 / (1 + Math.max(hit.distance, 0))).toFixed(6),
     );
@@ -99,6 +108,7 @@ export async function resolveSearchResults(
       filingDate: formatDate(record.filingDate),
       issueDate: formatDate(record.publicationDate),
       description: buildDescription(record),
+      imageList: parseImageList(record.imageList),
     });
 
     results.push({
@@ -116,6 +126,7 @@ export async function resolveSearchResults(
       distance: hit.distance,
       serialNum: serial || normalizeSerialNum(record.numberWithoutCodes ?? ""),
       imageName: hit.imageName,
+      imageList: parseImageList(record.imageList),
     });
   }
 

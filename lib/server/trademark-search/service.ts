@@ -60,12 +60,14 @@ type SearchInput = {
   requestId?: string;
 };
 
+type UploadedImageRef = Pick<UploadedImage, "objectKey" | "url">;
+
 type SearchDependencies = {
   upload: (
     objectKey: string,
     buffer: Buffer,
     mimeType: string,
-  ) => Promise<UploadedImage>;
+  ) => Promise<UploadedImageRef>;
   vectorize: (buffer: Buffer, mimeType: string) => Promise<VectorizeResult>;
 };
 
@@ -74,8 +76,8 @@ const parseResultsFromJson = (value: unknown): TrademarkResultItem[] => {
   return value as TrademarkResultItem[];
 };
 
-const resignResultImages = (items: TrademarkResultItem[]) => {
-  return items.map((item) => {
+const resignResultImages = async (items: TrademarkResultItem[]) => {
+  return Promise.all(items.map(async (item) => {
     if (!item.imageName) return item;
     let objectKey = "";
     try {
@@ -86,11 +88,12 @@ const resignResultImages = (items: TrademarkResultItem[]) => {
 
     if (!objectKey) return item;
 
+    const imageUrl = await signResultImageUrl(objectKey);
     return {
       ...item,
-      imageUrl: signResultImageUrl(objectKey),
+      imageUrl,
     };
-  });
+  }));
 };
 
 export class TrademarkSearchService {
@@ -100,13 +103,7 @@ export class TrademarkSearchService {
     deps: Partial<SearchDependencies> = {},
   ) {
     this.deps = {
-      upload: async (objectKey, buffer, mimeType) =>
-        uploadSearchImage(objectKey, buffer, mimeType).then((uploaded) => ({
-          ...uploaded,
-          sha256: "",
-          mimeType,
-          size: buffer.length,
-        })),
+      upload: uploadSearchImage,
       vectorize: vectorizeImage,
       ...deps,
     };
@@ -186,7 +183,12 @@ export class TrademarkSearchService {
 
       const decoded = decodeBase64Image(input.imageBase64);
       const imageSha256 = sha256OfBuffer(decoded.buffer);
-      const objectKey = buildUploadObjectKey(decoded.extension);
+      const objectKey = buildUploadObjectKey({
+        extension: decoded.extension,
+        userId: input.userId,
+        requestId,
+        sha256: imageSha256,
+      });
 
       const uploadedRaw = await this.deps.upload(
         objectKey,
@@ -327,21 +329,24 @@ export class TrademarkSearchService {
       },
     });
 
-    return records.map((record) => ({
-      // Re-sign URLs on read, so history remains valid after previous signatures expire.
-      queryImageUrl: (() => {
-        try {
-          return signResultImageUrl(record.queryImageObjectKey);
-        } catch {
-          return record.queryImageObjectKey;
-        }
-      })(),
-      id: record.id.toString(),
-      timestamp: record.createdAt.getTime(),
-      cost: bigIntToNumber(record.searchPriceAmount),
-      status: record.status,
-      resultCount: record.resultCount,
-      results: resignResultImages(parseResultsFromJson(record.responseItems)),
+    return Promise.all(records.map(async (record) => {
+      let queryImageUrl = record.queryImageObjectKey;
+      try {
+        // Re-sign URLs on read, so history remains valid after previous signatures expire.
+        queryImageUrl = await signResultImageUrl(record.queryImageObjectKey);
+      } catch {
+        queryImageUrl = record.queryImageObjectKey;
+      }
+
+      return {
+        id: record.id.toString(),
+        timestamp: record.createdAt.getTime(),
+        queryImageUrl,
+        cost: bigIntToNumber(record.searchPriceAmount),
+        status: record.status,
+        resultCount: record.resultCount,
+        results: await resignResultImages(parseResultsFromJson(record.responseItems)),
+      };
     }));
   }
 

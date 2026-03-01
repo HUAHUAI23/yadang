@@ -7,6 +7,7 @@
 - `GET /healthz`: process health.
 - `GET /readyz`: model readiness.
 - `POST /v1/vectorize`: image embedding endpoint.
+  - When `VECTOR_API_KEY` is configured, this endpoint requires `Authorization: Bearer <VECTOR_API_KEY>`.
 
 Request payload:
 
@@ -64,6 +65,7 @@ Then point the main app to this service:
 
 ```env
 VECTOR_API_ENDPOINT=http://127.0.0.1:8001/v1/vectorize
+VECTOR_API_KEY=replace_with_internal_vector_api_token
 VECTOR_MODEL_ID=facebook/dinov3-vitl16-pretrain-lvd1689m
 VECTOR_DIMENSION=1024
 ```

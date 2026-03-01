@@ -20,6 +20,7 @@ const createClient = () => {
     bucket: env.aliyunOssBucket,
     accessKeyId: env.aliyunOssAccessKeyId,
     accessKeySecret: env.aliyunOssAccessKeySecret,
+    authorizationV4: true,
   };
 
   if (env.aliyunOssEndpoint) {
@@ -57,19 +58,25 @@ export async function uploadSearchImage(
     },
   });
 
-  const url = client.signatureUrl(objectKey, {
-    expires: env.aliyunOssSignedUrlExpiresSeconds,
-  });
+  const url = await client.signatureUrlV4(
+    "GET",
+    env.aliyunOssSignedUrlExpiresSeconds,
+    undefined,
+    objectKey,
+  );
 
   return { objectKey, url };
 }
 
-export function signResultImageUrl(objectKey: string) {
+export async function signResultImageUrl(objectKey: string) {
   const client = getOssClient();
 
-  return client.signatureUrl(objectKey, {
-    expires: env.aliyunOssSignedUrlExpiresSeconds,
-  });
+  return client.signatureUrlV4(
+    "GET",
+    env.aliyunOssSignedUrlExpiresSeconds,
+    undefined,
+    objectKey,
+  );
 }
 
 export function normalizeMilvusImageObjectKey(imageName: string) {

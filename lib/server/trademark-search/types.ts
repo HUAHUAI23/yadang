@@ -38,6 +38,7 @@ export type PatentDesignMatch = {
   filingDate: string;
   issueDate: string;
   description: string;
+  imageList?: string[];
 };
 
 export type TrademarkResultItem = {
@@ -55,6 +56,7 @@ export type TrademarkResultItem = {
   distance: number;
   serialNum: string;
   imageName: string;
+  imageList?: string[];
 };
 
 export type SearchRecordPayload = {

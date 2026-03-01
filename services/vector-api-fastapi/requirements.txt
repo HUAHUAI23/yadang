@@ -67,7 +67,9 @@ mpmath==1.3.0
 networkx==3.6.1
     # via torch
 numpy==2.4.2
-    # via transformers
+    # via
+    #   torchvision
+    #   transformers
 nvidia-cublas-cu12==12.8.4.1 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via
     #   nvidia-cudnn-cu12
@@ -110,7 +112,9 @@ packaging==26.0
     #   huggingface-hub
     #   transformers
 pillow==12.0.0
-    # via vector-api-fastapi
+    # via
+    #   torchvision
+    #   vector-api-fastapi
 pydantic==2.12.5
     # via
     #   fastapi
@@ -151,6 +155,10 @@ sympy==1.14.0
 tokenizers==0.22.2
     # via transformers
 torch==2.8.0
+    # via
+    #   torchvision
+    #   vector-api-fastapi
+torchvision==0.23.0
     # via vector-api-fastapi
 tqdm==4.67.3
     # via

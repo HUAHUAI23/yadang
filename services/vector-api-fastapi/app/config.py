@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     max_image_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
     normalize_vector: bool = False
     reject_model_override: bool = True
+    vector_api_key: SecretStr | None = None
 
     @property
     def hf_token_value(self) -> str | None:
@@ -37,6 +38,13 @@ class Settings(BaseSettings):
             return None
         token = self.hf_token.get_secret_value().strip()
         return token if token else None
+
+    @property
+    def vector_api_key_value(self) -> str | None:
+        if self.vector_api_key is None:
+            return None
+        key = self.vector_api_key.get_secret_value().strip()
+        return key if key else None
 
 
 @lru_cache(maxsize=1)

@@ -59,13 +59,37 @@ export const sha256OfBuffer = (buffer: Buffer) => {
   return createHash("sha256").update(buffer).digest("hex");
 };
 
-export const buildUploadObjectKey = (extension: string) => {
+const sanitizeObjectKeySegment = (value: string) => {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+};
+
+export const buildUploadObjectKey = (input: {
+  extension: string;
+  userId: number;
+  requestId: string;
+  sha256: string;
+}) => {
   const now = new Date();
   const yyyy = now.getUTCFullYear();
   const mm = `${now.getUTCMonth() + 1}`.padStart(2, "0");
   const dd = `${now.getUTCDate()}`.padStart(2, "0");
-  const folder = `${env.aliyunOssUploadPrefix}/${yyyy}/${mm}/${dd}`;
-  return `${folder}/${randomUUID()}.${extension}`;
+  const hh = `${now.getUTCHours()}`.padStart(2, "0");
+  const safeRequestId = sanitizeObjectKeySegment(input.requestId) || randomUUID();
+  const sha12 = sanitizeObjectKeySegment(input.sha256.slice(0, 12));
+  const ext = sanitizeObjectKeySegment(input.extension) || "bin";
+
+  const folder = [
+    env.aliyunOssUploadPrefix,
+    "v1",
+    `user_${input.userId}`,
+    "query",
+    `${yyyy}`,
+    mm,
+    dd,
+    hh,
+  ].join("/");
+
+  return `${folder}/${safeRequestId}_${sha12}.${ext}`;
 };
 
 export const bigIntToNumber = (value: bigint) => {

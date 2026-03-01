@@ -58,6 +58,9 @@ export default function SearchResults({ results, onSelect }: SearchResultsProps)
               <p className="text-xs text-slate-500 font-medium line-clamp-1 italic">
                 {item.owner}
               </p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">
+                原图集: {item.imageList?.length ?? 0}
+              </p>
             </div>
           </div>
         ))}

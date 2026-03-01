@@ -6,13 +6,15 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from http import HTTPStatus
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import Settings, get_settings
 from app.inference import DINOv3Embedder, VectorizationError
 from app.schemas import HealthResponse, VectorizeRequest, VectorizeResponse
 
 PROVIDER_NAME = "local-fastapi-dinov3"
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @dataclass
@@ -42,11 +44,12 @@ async def lifespan(app: FastAPI):
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
 
     logger.info(
-        "Model loaded: model=%s, device=%s, dtype=%s, warmup=%s, cost=%sms",
+        "Model loaded: model=%s, device=%s, dtype=%s, warmup=%s, auth=%s, cost=%sms",
         settings.model_id,
         embedder.device,
         embedder.dtype,
         settings.warmup_on_startup,
+        bool(settings.vector_api_key_value),
         elapsed_ms,
     )
 
@@ -74,6 +77,27 @@ def _runtime() -> RuntimeState:
             detail="模型服务未就绪",
         )
     return runtime
+
+
+def _verify_vector_api_auth(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> None:
+    runtime = _runtime()
+    expected_key = runtime.settings.vector_api_key_value
+
+    if expected_key is None:
+        return
+
+    if (
+        credentials is None
+        or credentials.scheme.lower() != "bearer"
+        or credentials.credentials != expected_key
+    ):
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="向量接口鉴权失败",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @app.get("/healthz", response_model=HealthResponse)
@@ -104,7 +128,10 @@ def readyz():
 
 
 @app.post("/v1/vectorize", response_model=VectorizeResponse)
-def vectorize(request: VectorizeRequest):
+def vectorize(
+    request: VectorizeRequest,
+    _: None = Depends(_verify_vector_api_auth),
+):
     runtime = _runtime()
     settings = runtime.settings
 
@@ -139,4 +166,3 @@ def vectorize(request: VectorizeRequest):
         latencyMs=latency_ms,
         normalized=settings.normalize_vector,
     )
-
