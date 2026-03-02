@@ -1,0 +1,308 @@
+# 环境变量配置总览（主服务 + 向量服务）
+
+本文档整理当前项目运行所需的环境变量，按模块分组给出：
+
+1. 必要配置（最小可运行）
+2. 全量配置（包含可选项）
+
+说明：当前代码已移除环境变量默认值。除文档明确标注“可选”的项外，均需在 `.env` 显式配置。
+
+适用代码基线：
+
+- 主服务：`lib/env.ts`
+- 向量服务：`services/vector-api-fastapi/app/config.py`
+
+## 1. 必要配置（最小可运行）
+
+### 1.1 主服务（Next.js）必要配置
+
+#### A. 基础与数据库
+
+- `BUSINESS_DATABASE_URL`
+- `EXTERNAL_DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_ISSUER`
+- `JWT_AUDIENCE`
+- `JWT_EXPIRES_IN`
+- `AUTH_COOKIE_NAME`
+- `SMS_CODE_SECRET`
+- `SMS_CODE_EXPIRES_IN`
+- `SMS_CODE_COOLDOWN`
+- `SMS_CODE_MAX_ATTEMPTS`
+- `INITIAL_ACCOUNT_BALANCE`
+- `TRADEMARK_SEARCH_GLOBAL_PRICE`
+
+#### B. 阿里云短信发送
+
+- `ALIYUN_SMS_ACCESS_KEY_ID`
+- `ALIYUN_SMS_ACCESS_KEY_SECRET`
+- `ALIYUN_SMS_SIGN_NAME`
+- `ALIYUN_SMS_TEMPLATE_CODE`
+- `ALIYUN_SMS_ENDPOINT`
+- `ALIYUN_SMS_CONNECT_TIMEOUT_MS`
+- `ALIYUN_SMS_READ_TIMEOUT_MS`
+- `ALIYUN_SMS_AUTORETRY`
+- `ALIYUN_SMS_MAX_ATTEMPTS`
+
+#### C. OSS（图片上传与签名）
+
+- `OSS_ACCESS_KEY_ID`
+- `OSS_ACCESS_KEY_SECRET`
+- `ALIYUN_OSS_REGION`
+- `ALIYUN_OSS_BUCKET`
+- `ALIYUN_OSS_SIGNED_URL_EXPIRES_SECONDS`
+- `ALIYUN_OSS_UPLOAD_PREFIX`
+
+说明：OSS 密钥命名已统一，只使用 `OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET`。
+可选：`ALIYUN_OSS_ENDPOINT`
+
+#### D. Milvus（向量检索）
+
+- `MILVUS_ADDRESS`
+- `MILVUS_USERNAME`
+- `MILVUS_PASSWORD`
+- `MILVUS_COLLECTION_NAME`
+- `MILVUS_VECTOR_FIELD`
+- `MILVUS_TOP_K`
+- `MILVUS_METRIC_TYPE`
+
+可选：`MILVUS_TOKEN`、`MILVUS_SEARCH_PARAMS`
+
+#### E. 向量服务调用（主服务 -> 向量 API）
+
+- `VECTOR_API_ENDPOINT`
+- `VECTOR_API_KEY`
+- `VECTOR_API_TIMEOUT_MS`
+- `VECTOR_MODEL_ID`
+- `VECTOR_DIMENSION`
+
+### 1.2 向量服务（FastAPI）必要配置
+
+- `APP_NAME`
+- `APP_VERSION`
+- `LOG_LEVEL`
+- `MODEL_ID`
+- `LOCAL_FILES_ONLY`
+- `TRUST_REMOTE_CODE`
+- `WARMUP_ON_STARTUP`
+- `TORCH_DEVICE`
+- `TORCH_DTYPE`
+- `MAX_IMAGE_BYTES`
+- `NORMALIZE_VECTOR`
+- `REJECT_MODEL_OVERRIDE`
+- `VECTOR_API_KEY`
+
+可选：`HF_TOKEN`（仅当模型是 gated/private 时）
+
+## 2. 全量配置
+
+### 2.1 主服务（Next.js）全量变量
+
+#### A. JWT 与会话
+
+- `JWT_SECRET`
+- `JWT_ISSUER`
+- `JWT_AUDIENCE`
+- `JWT_EXPIRES_IN`
+- `AUTH_COOKIE_NAME`
+
+#### B. 数据库连接
+
+- `BUSINESS_DATABASE_URL`
+- `EXTERNAL_DATABASE_URL`
+
+#### C. 短信验证码逻辑
+
+- `SMS_CODE_SECRET`
+- `SMS_CODE_EXPIRES_IN`
+- `SMS_CODE_COOLDOWN`
+- `SMS_CODE_MAX_ATTEMPTS`
+
+#### D. 阿里云短信发送
+
+- `ALIYUN_SMS_ACCESS_KEY_ID`
+- `ALIYUN_SMS_ACCESS_KEY_SECRET`
+- `ALIYUN_SMS_SIGN_NAME`
+- `ALIYUN_SMS_TEMPLATE_CODE`
+- `ALIYUN_SMS_ENDPOINT`
+- `ALIYUN_SMS_CONNECT_TIMEOUT_MS`
+- `ALIYUN_SMS_READ_TIMEOUT_MS`
+- `ALIYUN_SMS_AUTORETRY`
+- `ALIYUN_SMS_MAX_ATTEMPTS`
+
+#### E. DB SSL
+
+- `DB_SSL`
+- `DB_SSL_CA_PATH`
+- `DB_SSL_REJECT_UNAUTHORIZED`
+- `BUSINESS_DB_SSL`
+- `BUSINESS_DB_SSL_CA_PATH`
+- `BUSINESS_DB_SSL_REJECT_UNAUTHORIZED`
+- `EXTERNAL_DB_SSL`
+- `EXTERNAL_DB_SSL_CA_PATH`
+- `EXTERNAL_DB_SSL_REJECT_UNAUTHORIZED`
+
+#### F. OSS
+
+- `OSS_ACCESS_KEY_ID`
+- `OSS_ACCESS_KEY_SECRET`
+- `ALIYUN_OSS_REGION`
+- `ALIYUN_OSS_BUCKET`
+- `ALIYUN_OSS_ENDPOINT`
+- `ALIYUN_OSS_SIGNED_URL_EXPIRES_SECONDS`
+- `ALIYUN_OSS_UPLOAD_PREFIX`
+
+#### G. Milvus
+
+- `MILVUS_ADDRESS`
+- `MILVUS_USERNAME`
+- `MILVUS_PASSWORD`
+- `MILVUS_TOKEN`
+- `MILVUS_COLLECTION_NAME`
+- `MILVUS_VECTOR_FIELD`
+- `MILVUS_TOP_K`
+- `MILVUS_METRIC_TYPE`
+- `MILVUS_SEARCH_PARAMS`
+
+#### H. 向量服务调用
+
+- `VECTOR_API_ENDPOINT`
+- `VECTOR_API_KEY`
+- `VECTOR_API_TIMEOUT_MS`
+- `VECTOR_MODEL_ID`
+- `VECTOR_DIMENSION`
+
+#### I. 业务基础配置
+
+- `INITIAL_ACCOUNT_BALANCE`
+- `TRADEMARK_SEARCH_GLOBAL_PRICE`
+
+### 2.2 向量服务（FastAPI）全量变量
+
+#### A. 应用信息
+
+- `APP_NAME`
+- `APP_VERSION`
+- `LOG_LEVEL`
+
+#### B. 模型加载
+
+- `MODEL_ID`
+- `HF_TOKEN`
+- `LOCAL_FILES_ONLY`
+- `TRUST_REMOTE_CODE`
+- `WARMUP_ON_STARTUP`
+
+#### C. 运行时推理
+
+- `TORCH_DEVICE`
+- `TORCH_DTYPE`
+- `MAX_IMAGE_BYTES`
+- `NORMALIZE_VECTOR`
+- `REJECT_MODEL_OVERRIDE`
+
+#### D. 接口鉴权
+
+- `VECTOR_API_KEY`
+
+## 3. 一致性约束（必须满足）
+
+1. 主服务 `VECTOR_API_KEY` 与向量服务 `VECTOR_API_KEY` 必须一致。
+2. `VECTOR_DIMENSION` 必须与向量服务实际输出维度、Milvus collection 维度一致。
+3. OSS 必须使用统一密钥名：`OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET`。
+
+## 4. 最小示例
+
+### 4.1 主服务 `.env` 最小示例
+
+```env
+BUSINESS_DATABASE_URL="mysql://user:pass@127.0.0.1:3306/business_db"
+EXTERNAL_DATABASE_URL="mysql://user:pass@127.0.0.1:3306/external_db"
+JWT_SECRET="replace_with_long_random_string"
+JWT_ISSUER="patent-lens"
+JWT_AUDIENCE="patent-lens"
+JWT_EXPIRES_IN="604800"
+AUTH_COOKIE_NAME="pl_session"
+SMS_CODE_SECRET="replace_with_long_random_string"
+SMS_CODE_EXPIRES_IN="300"
+SMS_CODE_COOLDOWN="60"
+SMS_CODE_MAX_ATTEMPTS="5"
+INITIAL_ACCOUNT_BALANCE="100"
+TRADEMARK_SEARCH_GLOBAL_PRICE="20"
+
+ALIYUN_SMS_ACCESS_KEY_ID="your_sms_ak"
+ALIYUN_SMS_ACCESS_KEY_SECRET="your_sms_sk"
+ALIYUN_SMS_SIGN_NAME="your_sms_sign"
+ALIYUN_SMS_TEMPLATE_CODE="your_sms_template_code"
+ALIYUN_SMS_ENDPOINT="dysmsapi.aliyuncs.com"
+ALIYUN_SMS_CONNECT_TIMEOUT_MS="10000"
+ALIYUN_SMS_READ_TIMEOUT_MS="10000"
+ALIYUN_SMS_AUTORETRY="true"
+ALIYUN_SMS_MAX_ATTEMPTS="3"
+
+OSS_ACCESS_KEY_ID="your_oss_ak"
+OSS_ACCESS_KEY_SECRET="your_oss_sk"
+ALIYUN_OSS_REGION="oss-cn-hangzhou"
+ALIYUN_OSS_BUCKET="your_bucket"
+ALIYUN_OSS_SIGNED_URL_EXPIRES_SECONDS="300"
+ALIYUN_OSS_UPLOAD_PREFIX="trademark-search/uploads"
+
+MILVUS_ADDRESS="127.0.0.1:19530"
+MILVUS_USERNAME="root"
+MILVUS_PASSWORD="Milvus"
+MILVUS_TOKEN="root:Milvus"
+MILVUS_COLLECTION_NAME="patent_design_milvus_dinov3_vitl16_300m"
+MILVUS_VECTOR_FIELD="vector"
+MILVUS_TOP_K="60"
+MILVUS_METRIC_TYPE="L2"
+
+VECTOR_API_ENDPOINT="http://127.0.0.1:8001/v1/vectorize"
+VECTOR_API_KEY="replace_with_internal_vector_api_token"
+VECTOR_API_TIMEOUT_MS="15000"
+VECTOR_MODEL_ID="facebook/dinov3-vitl16-pretrain-lvd1689m"
+VECTOR_DIMENSION="1024"
+```
+
+### 4.2 向量服务 `.env` 最小示例
+
+```env
+APP_NAME="zrt-vector-api-fastapi"
+APP_VERSION="0.1.0"
+LOG_LEVEL="INFO"
+MODEL_ID="facebook/dinov3-vitl16-pretrain-lvd1689m"
+LOCAL_FILES_ONLY="false"
+TRUST_REMOTE_CODE="false"
+WARMUP_ON_STARTUP="true"
+TORCH_DEVICE="auto"
+TORCH_DTYPE="auto"
+MAX_IMAGE_BYTES="10485760"
+NORMALIZE_VECTOR="false"
+REJECT_MODEL_OVERRIDE="true"
+VECTOR_API_KEY="replace_with_internal_vector_api_token"
+```
+
+## 5. 启动顺序建议
+
+1. 先启动向量服务（`services/vector-api-fastapi`）。
+2. 再启动主服务（Next.js）。
+3. 初始化业务配置：
+   - `pnpm prisma:business:migrate:deploy`
+   - `pnpm system:config:init`
+
+## 6. 问题记录（待修复）
+
+### 6.1 商标检索结果图显示失败（Milvus 命中但前端破图）
+
+- 现象：
+  - Milvus 命中正常（如命中 60/70 条），`responseItems` 有数据；
+  - 前端结果卡片图片加载失败（历史查询图正常）。
+- 已确认原因：
+  - 结果图此前使用 `milvus.image_name` 经过 `normalizeMilvusImageObjectKey` 后，在当前 `ALIYUN_OSS_BUCKET` 上签名；
+  - 该 bucket 主要用于“上传查询图”，并不一定存放 Milvus 命中的专利原图对象，导致 `NoSuchKey/404`。
+- 当前临时方案（已生效）：
+  - 结果图展示改为优先使用 `patent_design.imageList` 的首图 URL；
+  - 历史记录读取时也优先回填 `imageList[0]`，不再重签结果图 OSS URL。
+- 后续修复项：
+  1. 拆分 OSS 配置：上传桶与结果图桶分离（`UPLOAD_OSS_*` / `RESULT_OSS_*`）。
+  2. 对 Milvus `image_name -> objectKey` 规则做版本化治理，避免依赖硬编码路径截断。
+  3. 增加结果图可用性检测与降级策略（404 回退到 `imageList`）。

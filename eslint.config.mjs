@@ -64,6 +64,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "components/ui/**",
+    "services/vector-api-fastapi/**",
   ]),
 ])
 
