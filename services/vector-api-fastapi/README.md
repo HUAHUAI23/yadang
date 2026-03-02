@@ -7,7 +7,7 @@
 - `GET /healthz`: process health.
 - `GET /readyz`: model readiness.
 - `POST /v1/vectorize`: image embedding endpoint.
-  - When `VECTOR_API_KEY` is configured, this endpoint requires `Authorization: Bearer <VECTOR_API_KEY>`.
+  - Requires `Authorization: Bearer <VECTOR_API_KEY>`.
 
 Request payload:
 

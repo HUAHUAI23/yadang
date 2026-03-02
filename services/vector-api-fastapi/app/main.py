@@ -85,9 +85,6 @@ def _verify_vector_api_auth(
     runtime = _runtime()
     expected_key = runtime.settings.vector_api_key_value
 
-    if expected_key is None:
-        return
-
     if (
         credentials is None
         or credentials.scheme.lower() != "bearer"
