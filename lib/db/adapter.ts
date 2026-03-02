@@ -1,8 +1,8 @@
-import "server-only";
-
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 import { type AdapterLabel, resolveDatabaseOptions } from "@/lib/db/db-url";
+
+import "server-only";
 
 export const createMariaDbAdapter = (
   databaseUrl: string | undefined,

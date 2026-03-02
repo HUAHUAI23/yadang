@@ -23,6 +23,21 @@ enum VerificationPurpose {
   REGISTER
 }
 
+enum SearchPriceCode {
+  TRADEMARK_IMAGE_SEARCH
+}
+
+enum TransactionType {
+  RECHARGE
+  SEARCH_DEBIT
+  ADMIN_ADJUSTMENT
+}
+
+enum SearchRecordStatus {
+  SUCCESS
+  FAILED
+}
+
 model User {
   id                Int                @id @default(autoincrement())
   username          String?            @unique
@@ -32,28 +47,103 @@ model User {
   passwordHash      String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  credits           UserCredits?
   account           Account?
+  searchPrices      SearchPrice[]
+  transactions      Transaction[]
+  searchRecords     TrademarkSearchRecord[]
   verificationCodes VerificationCode[]
 }
 
-model UserCredits {
-  id             Int      @id @default(autoincrement())
-  userId         Int      @unique
-  balance        Int      @default(0)
-  totalRecharged Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Account {
+  id            Int                    @id @default(autoincrement())
+  userId        Int                    @unique
+  balance       BigInt                 @default(0)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  searchRecords TrademarkSearchRecord[]
 }
 
-model Account {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  balance   BigInt   @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model SearchPrice {
+  id            Int                    @id @default(autoincrement())
+  code          SearchPriceCode
+  userId        Int?
+  amount        BigInt
+  enabled       Boolean                @default(true)
+  note          String?                @db.VarChar(255)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  searchRecords TrademarkSearchRecord[]
+
+  @@index([code, enabled])
+  @@index([userId])
+  @@unique([code, userId])
+}
+
+model Transaction {
+  id            BigInt                 @id @default(autoincrement())
+  userId        Int
+  accountId     Int
+  type          TransactionType
+  amount        BigInt
+  balanceBefore BigInt
+  balanceAfter  BigInt
+  description   String?                @db.VarChar(255)
+  bizId         String?                @db.VarChar(64)
+  metadata      Json?
+  createdAt     DateTime               @default(now())
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account       Account                @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  searchRecords TrademarkSearchRecord[]
+
+  @@index([userId, createdAt])
+  @@index([accountId, createdAt])
+  @@index([type, createdAt])
+  @@map("trsanction")
+}
+
+model TrademarkSearchRecord {
+  id                  BigInt            @id @default(autoincrement())
+  userId              Int
+  accountId           Int
+  searchPriceId       Int?
+  transactionId       BigInt?
+  requestId           String?           @unique @db.VarChar(64)
+  status              SearchRecordStatus @default(SUCCESS)
+  searchPriceAmount   BigInt
+  queryImageObjectKey String            @db.VarChar(1024)
+  queryImageUrl       String            @db.VarChar(2048)
+  queryImageSha256    String            @db.VarChar(64)
+  queryImageMimeType  String            @db.VarChar(128)
+  queryImageSize      Int
+  queryVector         Json
+  vectorProvider      String            @db.VarChar(128)
+  vectorModel         String            @db.VarChar(255)
+  vectorDimension     Int
+  vectorLatencyMs     Int?
+  milvusCollection    String            @db.VarChar(255)
+  milvusTopK          Int
+  milvusLatencyMs     Int?
+  milvusResultCount   Int               @default(0)
+  milvusResults       Json
+  matchedSerialNums   Json
+  matchedRecords      Json
+  responseItems       Json
+  resultCount         Int               @default(0)
+  errorMessage        String?           @db.Text
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  completedAt         DateTime?
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account             Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  searchPrice         SearchPrice?      @relation(fields: [searchPriceId], references: [id], onDelete: SetNull)
+  transaction         Transaction?      @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([accountId, createdAt])
+  @@index([status, createdAt])
 }
 
 model AuthMethodConfig {

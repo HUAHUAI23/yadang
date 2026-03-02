@@ -1,13 +1,13 @@
-import "server-only";
-
 import { createHmac } from "node:crypto";
 
-import { env } from "@/lib/env";
 import { businessPrisma } from "@/lib/db/business";
+import { env } from "@/lib/env";
 import {
   VerificationChannel,
   VerificationPurpose,
 } from "@/prisma/generated/business/enums";
+
+import "server-only";
 
 const getExpiresInSeconds = () => env.smsCodeExpiresIn;
 const getCooldownSeconds = () => env.smsCodeCooldown;

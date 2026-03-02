@@ -1,7 +1,6 @@
-import "server-only";
+import type { AccountState, AuthUser } from "@/lib/types";
 
-import { businessPrisma } from "@/lib/db/business";
-import type { AuthUser, UserCredits } from "@/lib/types";
+import "server-only";
 
 export const toAuthUser = (user: {
   id: number;
@@ -15,18 +14,17 @@ export const toAuthUser = (user: {
   avatar: user.avatar,
 });
 
-export async function ensureUserCredits(userId: number): Promise<UserCredits> {
-  const credits = await businessPrisma.userCredits.findUnique({
-    where: { userId },
-  });
-
-  if (credits) {
-    return { balance: credits.balance, totalRecharged: credits.totalRecharged };
+export const toAuthAccount = (account: {
+  id: number;
+  balance: bigint;
+}): AccountState => {
+  const balance = Number(account.balance);
+  if (!Number.isFinite(balance)) {
+    throw new Error("账户余额超出可序列化范围");
   }
 
-  const created = await businessPrisma.userCredits.create({
-    data: { userId, balance: 0, totalRecharged: 0 },
-  });
-
-  return { balance: created.balance, totalRecharged: created.totalRecharged };
-}
+  return {
+    id: account.id,
+    balance,
+  };
+};

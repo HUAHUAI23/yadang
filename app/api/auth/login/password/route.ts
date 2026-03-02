@@ -1,10 +1,11 @@
-import { loginPasswordSchema } from "@/lib/validation/auth";
 import { assertAuthMethodEnabled } from "@/lib/auth/config";
+import { setSessionCookie,signSessionToken } from "@/lib/auth/jwt";
 import { verifyPassword } from "@/lib/auth/password";
-import { signSessionToken, setSessionCookie } from "@/lib/auth/jwt";
-import { ensureUserCredits, toAuthUser } from "@/lib/auth/user";
+import { toAuthAccount, toAuthUser } from "@/lib/auth/user";
 import { businessPrisma } from "@/lib/db/business";
+import { env } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/server/response";
+import { loginPasswordSchema } from "@/lib/validation/auth";
 
 export async function POST(request: Request) {
   try {
@@ -36,9 +37,32 @@ export async function POST(request: Request) {
   const token = await signSessionToken(user.id);
   await setSessionCookie(token);
 
-  const credits = await ensureUserCredits(user.id);
+  let account = await businessPrisma.account.findUnique({
+    where: { userId: user.id },
+  });
+  if (!account) {
+    try {
+      account = await businessPrisma.account.create({
+        data: {
+          userId: user.id,
+          balance: BigInt(env.initialAccountBalance),
+        },
+      });
+    } catch {
+      account = await businessPrisma.account.findUnique({
+        where: { userId: user.id },
+      });
+    }
+  }
 
-  return jsonOk({ user: toAuthUser(user), credits });
+  if (!account) {
+    return jsonError(500, "账户初始化失败");
+  }
+
+  return jsonOk({
+    user: toAuthUser(user),
+    account: toAuthAccount(account),
+  });
 }
 
 export const runtime = "nodejs";

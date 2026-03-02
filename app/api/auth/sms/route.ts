@@ -1,4 +1,3 @@
-import { sendSmsSchema } from "@/lib/validation/auth";
 import { assertAuthMethodEnabled } from "@/lib/auth/config";
 import { sendSmsCode } from "@/lib/auth/sms";
 import {
@@ -9,6 +8,7 @@ import {
 } from "@/lib/auth/verification";
 import { businessPrisma } from "@/lib/db/business";
 import { jsonError, jsonOk } from "@/lib/server/response";
+import { sendSmsSchema } from "@/lib/validation/auth";
 
 export async function POST(request: Request) {
   try {

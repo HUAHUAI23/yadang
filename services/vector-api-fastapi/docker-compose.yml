@@ -1,0 +1,17 @@
+services:
+  vector-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zrt-vector-api-fastapi
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    volumes:
+      - huggingface-cache:/home/appuser/.cache/huggingface
+
+volumes:
+  huggingface-cache:
+

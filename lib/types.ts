@@ -1,14 +1,8 @@
-export type SearchConfig = {
-  patents: boolean;
-  trademarks: boolean;
-};
-
 export enum SearchType {
-  DESIGN_PATENT = "DESIGN_PATENT",
   TRADEMARK = "TRADEMARK",
 }
 
-export interface PatentResult {
+export interface TrademarkResultItem {
   id: string;
   type: SearchType;
   title: string;
@@ -20,11 +14,40 @@ export interface PatentResult {
   imageUrl: string;
   status: string;
   similarityScore: number;
+  distance: number;
+  serialNum: string;
+  imageName: string;
+  imageList?: string[];
 }
 
-export interface UserCredits {
+export interface SearchHistoryItem {
+  id: string;
+  timestamp: number;
+  queryImageUrl: string;
+  cost: number;
+  status: "SUCCESS" | "FAILED";
+  resultCount: number;
+  results: TrademarkResultItem[];
+}
+
+export interface SearchResponse {
+  searchId: string;
+  cost: number;
   balance: number;
-  totalRecharged: number;
+  queryImageUrl: string;
+  resultCount: number;
+  results: TrademarkResultItem[];
+}
+
+export interface SearchPrice {
+  code: string;
+  amount: number;
+  balance: number;
+}
+
+export interface AccountState {
+  id: number;
+  balance: number;
 }
 
 export interface RechargePackage {
@@ -34,19 +57,12 @@ export interface RechargePackage {
   isPopular?: boolean;
 }
 
-export interface HistoryItem {
-  id: string;
-  timestamp: number;
-  thumbnail: string;
-  config: SearchConfig;
-  cost: number;
-  results: SearchResponse;
+export interface RechargeResult {
+  packageId: string;
+  amount: number;
+  credits: number;
+  balance: number;
 }
-
-export type SearchResponse = {
-  patents: PatentResult[];
-  trademarks: PatentResult[];
-};
 
 export type ApiResponse<T> = {
   code: number;
@@ -90,5 +106,5 @@ export type SmsSendPayload = {
 
 export type AuthResult = {
   user: AuthUser;
-  credits: UserCredits;
+  account: AccountState;
 };

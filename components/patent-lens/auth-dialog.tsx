@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { Resolver } from "react-hook-form";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -20,9 +20,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import type { AuthConfig, AuthResult } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import {
   loginPasswordSchema,
   loginSmsSchema,
@@ -48,6 +49,9 @@ type AuthFormValues = {
 type LoginMethod = "password" | "sms";
 
 const emptyConfig: AuthConfig = { password: true, sms: true };
+const buildAuthResolver = zodResolver as unknown as (
+  schema: unknown,
+) => Resolver<AuthFormValues, unknown, AuthFormValues>;
 
 const generateCaptchaCode = () => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -72,16 +76,27 @@ export default function AuthDialog({
 
   const allowPassword = authConfig.password;
   const allowSms = authConfig.sms;
+  const effectiveMode = allowPassword ? mode : "login";
+  const effectiveLoginMethod: LoginMethod =
+    allowPassword && allowSms
+      ? loginMethod
+      : allowPassword
+        ? "password"
+        : "sms";
 
   const schema = useMemo(() => {
-    if (mode === "register") {
+    if (effectiveMode === "register") {
       return allowSms ? registerSchema : registerNoSmsSchema;
     }
-    return loginMethod === "password" ? loginPasswordSchema : loginSmsSchema;
-  }, [allowSms, loginMethod, mode]);
+    return effectiveLoginMethod === "password"
+      ? loginPasswordSchema
+      : loginSmsSchema;
+  }, [allowSms, effectiveLoginMethod, effectiveMode]);
 
-  const form = useForm<AuthFormValues>({
-    resolver: zodResolver(schema as z.ZodType<AuthFormValues>),
+  const resolver = useMemo(() => buildAuthResolver(schema), [schema]);
+
+  const form = useForm<AuthFormValues, unknown, AuthFormValues>({
+    resolver,
     defaultValues: {
       username: "",
       phone: "",
@@ -105,20 +120,6 @@ export default function AuthDialog({
   }, [open]);
 
   useEffect(() => {
-    if (!allowPassword && !allowSms) return;
-    if (!allowPassword && loginMethod === "password") {
-      setLoginMethod("sms");
-      return;
-    }
-    if (!allowSms && loginMethod === "sms") {
-      setLoginMethod("password");
-    }
-    if (!allowPassword && mode === "register") {
-      setMode("login");
-    }
-  }, [allowPassword, allowSms, loginMethod, mode]);
-
-  useEffect(() => {
     if (countdown <= 0) return;
     const timer = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
     return () => clearTimeout(timer);
@@ -134,7 +135,7 @@ export default function AuthDialog({
       return;
     }
 
-    if (mode === "register") {
+    if (effectiveMode === "register") {
       if (!captcha || captcha !== captchaCode) {
         form.setError("captcha", { message: "验证码错误" });
         setCaptchaCode(generateCaptchaCode());
@@ -144,7 +145,7 @@ export default function AuthDialog({
 
     const response = await api.sendSms({
       phone,
-      purpose: mode === "register" ? "register" : "login",
+      purpose: effectiveMode === "register" ? "register" : "login",
     });
 
     if (response.code !== 0) {
@@ -157,8 +158,8 @@ export default function AuthDialog({
   };
 
   const handleSubmit = async (values: AuthFormValues) => {
-    if (mode === "login") {
-      if (loginMethod === "password") {
+    if (effectiveMode === "login") {
+      if (effectiveLoginMethod === "password") {
         const response = await api.authLoginPassword({
           username: values.username,
           password: values.password,
@@ -203,7 +204,7 @@ export default function AuthDialog({
   };
 
   const handleSwitchMode = () => {
-    setMode(mode === "login" ? "register" : "login");
+    setMode(effectiveMode === "login" ? "register" : "login");
     setSmsHint("");
     setCountdown(0);
     setCaptchaCode(generateCaptchaCode());
@@ -219,18 +220,18 @@ export default function AuthDialog({
         <div className="p-10">
           <DialogHeader className="mb-8">
             <DialogTitle className="text-3xl font-[900] text-slate-900 tracking-tight">
-              {mode === "register" ? "加入 PatentLens" : "欢迎回来"}
+              {effectiveMode === "register" ? "加入 PatentLens" : "欢迎回来"}
             </DialogTitle>
           </DialogHeader>
 
-          {showMethodTabs && mode === "login" && (
+          {showMethodTabs && effectiveMode === "login" && (
             <div className="mb-6 rounded-2xl bg-slate-100 p-2 flex gap-2">
               <Button
                 type="button"
                 onClick={() => setLoginMethod("password")}
                 className={cn(
                   "flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest",
-                  loginMethod === "password"
+                  effectiveLoginMethod === "password"
                     ? "bg-slate-900 text-white shadow-md"
                     : "bg-transparent text-slate-500 hover:text-slate-900"
                 )}
@@ -242,7 +243,7 @@ export default function AuthDialog({
                 onClick={() => setLoginMethod("sms")}
                 className={cn(
                   "flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest",
-                  loginMethod === "sms"
+                  effectiveLoginMethod === "sms"
                     ? "bg-slate-900 text-white shadow-md"
                     : "bg-transparent text-slate-500 hover:text-slate-900"
                 )}
@@ -260,7 +261,8 @@ export default function AuthDialog({
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
-              {mode === "login" && loginMethod === "password" && (
+              {effectiveMode === "login" &&
+                effectiveLoginMethod === "password" && (
                 <FormField
                   control={form.control}
                   name="username"
@@ -282,8 +284,9 @@ export default function AuthDialog({
                 />
               )}
 
-              {(mode === "login" && loginMethod === "sms") ||
-              mode === "register" ? (
+              {(effectiveMode === "login" &&
+                effectiveLoginMethod === "sms") ||
+              effectiveMode === "register" ? (
                 <FormField
                   control={form.control}
                   name="phone"
@@ -309,7 +312,7 @@ export default function AuthDialog({
                 />
               ) : null}
 
-              {mode === "register" && (
+              {effectiveMode === "register" && (
                 <FormField
                   control={form.control}
                   name="username"
@@ -331,7 +334,7 @@ export default function AuthDialog({
                 />
               )}
 
-              {mode === "register" && allowSms && (
+              {effectiveMode === "register" && allowSms && (
                 <div className="flex space-x-3">
                   <FormField
                     control={form.control}
@@ -367,8 +370,9 @@ export default function AuthDialog({
                 </div>
               )}
 
-              {(mode === "login" && loginMethod === "sms") ||
-              (mode === "register" && allowSms) ? (
+              {(effectiveMode === "login" &&
+                effectiveLoginMethod === "sms") ||
+              (effectiveMode === "register" && allowSms) ? (
                 <div className="flex space-x-3 items-start">
                   <FormField
                     control={form.control}
@@ -403,14 +407,15 @@ export default function AuthDialog({
                 </div>
               ) : null}
 
-              {(mode === "register" || loginMethod === "password") && (
+              {(effectiveMode === "register" ||
+                effectiveLoginMethod === "password") && (
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        {mode === "register" ? "设置密码" : "登录密码"}
+                        {effectiveMode === "register" ? "设置密码" : "登录密码"}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -426,7 +431,7 @@ export default function AuthDialog({
                 />
               )}
 
-              {mode === "register" && (
+              {effectiveMode === "register" && (
                 <FormField
                   control={form.control}
                   name="confirmPassword"
@@ -454,9 +459,9 @@ export default function AuthDialog({
                 disabled={!allowPassword && !allowSms}
                 className="w-full h-auto bg-slate-900 hover:bg-black text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-slate-200 active:scale-95"
               >
-                {mode === "register"
+                {effectiveMode === "register"
                   ? "立即注册并加入"
-                  : loginMethod === "sms"
+                  : effectiveLoginMethod === "sms"
                   ? "短信验证码登录"
                   : "登录控制台"}
               </Button>
@@ -469,7 +474,9 @@ export default function AuthDialog({
                 onClick={handleSwitchMode}
                 className="text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest transition-colors"
               >
-                {mode === "login" ? "没有账号？立即注册" : "已有账号？直接登录"}
+                {effectiveMode === "login"
+                  ? "没有账号？立即注册"
+                  : "已有账号？直接登录"}
               </button>
             </div>
           )}

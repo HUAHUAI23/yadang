@@ -1,0 +1,19 @@
+import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
+import { jsonError, jsonOk } from "@/lib/server/response";
+import { trademarkSearchService } from "@/lib/server/trademark-search";
+
+export async function POST() {
+  try {
+    const session = await resolveSessionContext({ createAccountIfMissing: true });
+    await trademarkSearchService.clearHistory(session.user.id);
+    return jsonOk({ ok: true });
+  } catch (error) {
+    if (error instanceof AuthSessionError) {
+      return jsonError(error.status, error.message);
+    }
+    return jsonError(500, (error as Error).message ?? "清空历史失败");
+  }
+}
+
+export const runtime = "nodejs";
+

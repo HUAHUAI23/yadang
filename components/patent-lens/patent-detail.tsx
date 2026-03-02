@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,15 +11,44 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { PatentResult } from "@/lib/types";
-import { SearchType } from "@/lib/types";
+import type { TrademarkResultItem } from "@/lib/types";
 
 interface PatentDetailProps {
-  item: PatentResult | null;
+  item: TrademarkResultItem | null;
   onClose: () => void;
 }
 
 export default function PatentDetail({ item, onClose }: PatentDetailProps) {
+  const galleryImages = useMemo(() => {
+    if (!item) return [] as string[];
+
+    const dedup = new Set<string>();
+    const images: string[] = [];
+
+    const append = (url: string | undefined) => {
+      if (!url) return;
+      const normalized = url.trim();
+      if (!normalized || dedup.has(normalized)) return;
+      dedup.add(normalized);
+      images.push(normalized);
+    };
+
+    item.imageList?.forEach((url) => append(url));
+    append(item.imageUrl);
+
+    return images;
+  }, [item]);
+
+  const [activeImage, setActiveImage] = useState("");
+
+  useEffect(() => {
+    if (!item) {
+      setActiveImage("");
+      return;
+    }
+    setActiveImage(galleryImages[0] ?? item.imageUrl);
+  }, [galleryImages, item]);
+
   return (
     <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl overflow-hidden p-0">
@@ -26,10 +57,11 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
             <div className="md:w-1/2 bg-gray-50 p-8 flex items-center justify-center">
               <div className="relative w-full h-[60vh] max-h-[70vh]">
                 <Image
-                  src={item.imageUrl}
+                  src={activeImage || item.imageUrl}
                   alt={item.title}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
+                  unoptimized
                   className="object-contain drop-shadow-xl"
                 />
               </div>
@@ -46,14 +78,8 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
               </DialogHeader>
 
               <div className="flex items-center space-x-2 mt-6">
-                <span
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    item.type === SearchType.DESIGN_PATENT
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-purple-100 text-purple-700"
-                  }`}
-                >
-                  {item.type === SearchType.DESIGN_PATENT ? "外观专利" : "商标"}
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
+                  商标图搜
                 </span>
                 <span className="text-xs font-bold text-gray-400">
                   {item.status || "Active"}
@@ -103,6 +129,37 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                   {item.description}
                 </p>
               </div>
+
+              {galleryImages.length ? (
+                <div className="mt-8">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-3">
+                    专利原图集（共 {galleryImages.length} 张）
+                  </label>
+                  <div className="grid grid-cols-4 gap-3">
+                    {galleryImages.map((url, index) => (
+                      <button
+                        key={`${item.id}-${index}`}
+                        type="button"
+                        onClick={() => setActiveImage(url)}
+                        className="relative block h-20 rounded-xl border border-gray-200 overflow-hidden bg-gray-100"
+                        title={`查看原图 ${index + 1}`}
+                      >
+                        <Image
+                          src={url}
+                          alt={`${item.title}-source-${index + 1}`}
+                          fill
+                          sizes="80px"
+                          unoptimized
+                          className="object-cover"
+                        />
+                        {activeImage === url ? (
+                          <span className="absolute inset-0 ring-2 ring-blue-500 ring-inset" />
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="mt-10 flex space-x-4">
                 <Button className="flex-1 bg-gray-900 hover:bg-black text-white py-4 rounded-2xl font-bold transition-all uppercase text-xs tracking-widest">

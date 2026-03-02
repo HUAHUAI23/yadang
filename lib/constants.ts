@@ -1,10 +1,5 @@
 import type { RechargePackage } from "./types";
 
-export const INITIAL_CREDITS = 100;
-export const SEARCH_COST_SINGLE = 20;
-export const SEARCH_COST_BOTH = 30;
-export const MAX_HISTORY_ITEMS = 50;
-
 export const DB_SYNC_TIME = "2026-01-30 12:30";
 
 export const RECHARGE_PACKAGES: RechargePackage[] = [
@@ -29,7 +24,14 @@ export const LANDING_CAROUSEL = [
   },
 ];
 
-export const LANDING_FEATURES = [
+type LandingFeature = {
+  title: string;
+  desc: string;
+  icon: string;
+  color: "blue" | "purple" | "indigo";
+};
+
+export const LANDING_FEATURES: LandingFeature[] = [
   {
     title: "毫秒级视觉识别",
     desc: "基于超大规模视觉特征向量模型，捕捉设计最细微的相似点。",
@@ -44,7 +46,7 @@ export const LANDING_FEATURES = [
   },
   {
     title: "隐私安全保障",
-    desc: "所有检索请求均经过端到端加密，历史记录仅本地化存储。",
+    desc: "所有检索请求均经过端到端加密，历史记录存储于服务端并可追溯。",
     icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
     color: "indigo",
   },

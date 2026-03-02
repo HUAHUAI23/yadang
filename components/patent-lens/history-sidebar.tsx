@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { HistoryItem } from "@/lib/types";
+import type { SearchHistoryItem } from "@/lib/types";
 
 interface HistorySidebarProps {
-  history: HistoryItem[];
-  onSelectItem: (item: HistoryItem) => void;
+  history: SearchHistoryItem[];
+  onSelectItem: (item: SearchHistoryItem) => void;
   onClearHistory: () => void;
 }
 
@@ -76,17 +77,13 @@ export default function HistorySidebar({
               >
                 <div
                   className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                    item.config.patents && item.config.trademarks
-                      ? "bg-gradient-to-b from-blue-500 to-purple-500"
-                      : item.config.patents
-                        ? "bg-blue-500"
-                        : "bg-purple-500"
+                    item.status === "SUCCESS" ? "bg-blue-500" : "bg-rose-500"
                   }`}
                 />
 
                 <div className="relative w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden flex-shrink-0 border border-slate-50 transition-all duration-700 group-hover:scale-95 group-hover:rotate-2">
                   <Image
-                    src={item.thumbnail}
+                    src={item.queryImageUrl}
                     alt="History"
                     fill
                     sizes="64px"
@@ -103,17 +100,19 @@ export default function HistorySidebar({
                       -{item.cost}P
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {item.config.patents && (
-                      <span className="text-[9px] px-2 py-0.5 bg-slate-900 text-white rounded-md font-black tracking-widest uppercase">
-                        外观
-                      </span>
-                    )}
-                    {item.config.trademarks && (
-                      <span className="text-[9px] px-2 py-0.5 bg-indigo-600 text-white rounded-md font-black tracking-widest uppercase">
-                        商标
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[9px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase ${
+                        item.status === "SUCCESS"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-rose-600 text-white"
+                      }`}
+                    >
+                      {item.status === "SUCCESS" ? "成功" : "失败"}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      {item.resultCount} 条结果
+                    </span>
                   </div>
                 </div>
               </div>
@@ -140,10 +139,11 @@ export default function HistorySidebar({
             </svg>
           </div>
           <p className="text-[10px] font-black uppercase tracking-widest leading-none">
-            数据加密存储于本地浏览器
+            搜索记录存储于服务端并可追溯
           </p>
         </div>
       </div>
     </aside>
   );
 }
+

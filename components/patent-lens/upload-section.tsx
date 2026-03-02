@@ -1,20 +1,17 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
+import Image from "next/image";
+
 import { Button } from "@/components/ui/button";
-import { DB_SYNC_TIME, SEARCH_COST_SINGLE, SEARCH_COST_BOTH } from "@/lib/constants";
-import type { SearchConfig } from "@/lib/types";
-import LibraryOption from "@/components/patent-lens/library-option";
+import { DB_SYNC_TIME } from "@/lib/constants";
 
 interface UploadSectionProps {
-  onSearch: (base64: string, config: SearchConfig) => void;
+  onSearch: (base64: string) => void;
   isLoading: boolean;
   currentBalance: number;
   preview: string | null;
   setPreview: (val: string | null) => void;
-  searchConfig: SearchConfig;
-  setSearchConfig: (config: SearchConfig) => void;
   cost: number;
 }
 
@@ -24,15 +21,12 @@ export default function UploadSection({
   currentBalance,
   preview,
   setPreview,
-  searchConfig,
-  setSearchConfig,
   cost,
 }: UploadSectionProps) {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canSearch =
-    !!preview && (searchConfig.patents || searchConfig.trademarks) && currentBalance >= cost;
+  const canSearch = !!preview && currentBalance >= cost && cost > 0;
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -73,11 +67,15 @@ export default function UploadSection({
           </span>
         </div>
         <h1 className="text-5xl lg:text-7xl font-[900] text-slate-900 tracking-tight leading-[1.1] mb-8">
-          下一代 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">知识产权</span>
-          <br />智能视觉引擎
+          下一代{" "}
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+            商标图搜
+          </span>
+          <br />
+          智能视觉引擎
         </h1>
         <p className="text-lg lg:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl">
-          通过 AI 视觉引擎，秒级识别并比对美国外观专利及商标库中的相似设计。
+          上传一张图片，系统会完成向量化、Milvus 检索，并返回关联的商标/外观信息结果。
         </p>
       </div>
 
@@ -142,7 +140,7 @@ export default function UploadSection({
                   拖拽文件或点击上传
                 </h2>
                 <p className="text-sm text-slate-400 mt-4 font-bold uppercase tracking-wide">
-                  支持高分辨率 PNG, JPG (20-30 积分/次)
+                  支持 PNG / JPG（单次动态扣费）
                 </p>
               </div>
             )}
@@ -154,7 +152,7 @@ export default function UploadSection({
                   <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin" />
                 </div>
                 <span className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] animate-pulse">
-                  正在同步全球数据库...
+                  正在执行商标向量检索...
                 </span>
               </div>
             )}
@@ -173,25 +171,20 @@ export default function UploadSection({
                 </span>
               </div>
 
-              <div className="space-y-5">
-                <LibraryOption
-                  label="美国外观专利"
-                  subLabel="Design Patents"
-                  checked={searchConfig.patents}
-                  onChange={(value) =>
-                    setSearchConfig({ ...searchConfig, patents: value })
-                  }
-                  color="blue"
-                />
-                <LibraryOption
-                  label="注册商标库"
-                  subLabel="Trademark Registry"
-                  checked={searchConfig.trademarks}
-                  onChange={(value) =>
-                    setSearchConfig({ ...searchConfig, trademarks: value })
-                  }
-                  color="purple"
-                />
+              <div className="p-5 rounded-[2rem] border-2 border-indigo-100 bg-indigo-50/30">
+                <div className="flex items-center space-x-5">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black bg-indigo-600 text-white">
+                    商
+                  </div>
+                  <div>
+                    <p className="text-sm font-[900] text-slate-800 tracking-tight">
+                      商标向量检索
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      Trademark Image Search
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -211,7 +204,7 @@ export default function UploadSection({
               </div>
 
               <Button
-                onClick={() => preview && onSearch(preview, searchConfig)}
+                onClick={() => preview && onSearch(preview)}
                 disabled={!canSearch || isLoading}
                 className={`w-full h-auto py-6 rounded-[2rem] font-[900] text-white transition-all shadow-2xl active:scale-95 flex items-center justify-center space-x-3 text-lg tracking-widest uppercase ${
                   canSearch && !isLoading
@@ -237,8 +230,8 @@ export default function UploadSection({
               )}
 
               <div className="mt-6 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <span>单库检索 {SEARCH_COST_SINGLE} 积分</span>
-                <span>双库检索 {SEARCH_COST_BOTH} 积分</span>
+                <span>当前余额 {currentBalance} 积分</span>
+                <span>按账户价格扣费</span>
               </div>
             </div>
           </div>
@@ -247,3 +240,4 @@ export default function UploadSection({
     </div>
   );
 }
+
