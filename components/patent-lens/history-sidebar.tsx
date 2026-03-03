@@ -97,7 +97,7 @@ export default function HistorySidebar({
                       {formatTime(item.timestamp)}
                     </span>
                     <div className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 shadow-sm">
-                      -{item.cost}P
+                      -¥{item.cost.toFixed(2)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -146,4 +146,3 @@ export default function HistorySidebar({
     </aside>
   );
 }
-

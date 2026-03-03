@@ -1,492 +1,398 @@
-# ZRT 项目全面分析与接手指南
+# ZRT 项目接手总指南（完整工程版）
 
-文档版本：`v1.0`
-
+文档版本：`v2.0`  
 更新时间：`2026-03-02`
 
-适用对象：新接手本项目的人类工程师、AI Agent、DevOps、测试与产品协作人员。
+## 1. 项目定位
+`zrt` 是一个「图像检索 + 账户计费 + 在线充值」一体化系统，当前采用 BFF 架构：
+
+1. 前后端主服务：`Next.js 16 + React 19 + TypeScript`
+2. 向量服务：`FastAPI`（独立目录 `services/vector-api-fastapi`）
+3. 数据存储：业务库 MySQL + 外部库 MySQL + Milvus + OSS
+4. 支付：支付宝接入，采用 `notify 回调 + 前端轮询 + 后端 Croner 轮询/关单` 三重兜底
+
+核心业务闭环：
+
+1. 用户登录
+2. 上传图片执行商标检索
+3. 按账户价格扣费（单位：分）
+4. 前端展示统一换算为元
+5. 余额不足时发起支付宝充值并自动到账
 
 ---
 
-## 1. 项目定位与结论速览
-
-`zrt` 是一个双服务协作的“图片检索 + 账户扣费”系统：
-
-1. 主服务：Next.js 16（App Router）承载前端页面与 BFF API。
-2. 子服务：FastAPI（Python）提供图片向量化能力。
-3. 数据侧：业务 MySQL + 外部 MySQL + Milvus + 阿里云 OSS。
-4. 业务闭环：登录/注册 -> 上传图片 -> 向量检索 -> 外部库匹配 -> 账户扣费 -> 历史追溯 -> 充值。
-
-当前项目可构建、可运行，但存在文档老化、测试体系缺失、部分依赖未落地使用等典型“可交付但需治理”的问题。
-
----
-
-## 2. 仓库结构总览（逐目录）
-
-以下覆盖仓库顶层每个目录的职责。
-
-| 目录 | 类型 | 作用 | 是否建议纳入接手重点 |
-|---|---|---|---|
-| `.github/` | 配置 | CI、Docker 多架构构建与发布工作流 | 是 |
-| `.next/` | 产物目录 | Next 构建输出（本地生成） | 否（仅排错时） |
-| `.pnpm-store/` | 缓存目录 | pnpm 本地依赖缓存 | 否 |
-| `.vscode/` | IDE 配置 | 格式化、ESLint 保存动作等 | 中 |
-| `app/` | 业务核心 | Next App Router 页面与 API 路由 | 是 |
-| `components/` | 业务核心 | 页面业务组件 + shadcn/ui 基础组件 | 是 |
-| `doc/` | 文档 | 部署/环境说明（本文件也在这里） | 是 |
-| `helloagents/` | 协作知识库 | 历史方案、wiki、changelog、流程资产 | 中（参考） |
-| `hooks/` | 代码 | 通用 Hook（目前仅 `use-mobile`） | 低 |
-| `lib/` | 业务核心 | API 客户端、认证、数据库、检索服务 | 是 |
-| `node_modules/` | 依赖目录 | 本地依赖安装结果 | 否 |
-| `prisma/` | 数据核心 | business/external schema、迁移、生成目录 | 是 |
-| `public/` | 静态资源 | 字体、静态图标 | 中 |
-| `scripts/` | 运维脚本 | 初始化认证方式和检索价格配置 | 是 |
-| `services/` | 子服务 | FastAPI 向量化服务 | 是 |
-| `stores/` | 前端状态 | Zustand 全局状态 | 中 |
-| `tmp/` | 临时目录 | 本地临时产物目录（当前为空） | 否 |
-| `types/` | 类型补充 | `ali-oss` 声明补充 | 低 |
-
-### 2.1 根文件重点
-
-| 文件 | 作用 |
-|---|---|
-| `package.json` | Node 依赖与脚本中枢 |
-| `pnpm-lock.yaml` | Node 依赖锁定 |
-| `Dockerfile` | 主服务多阶段镜像构建 |
-| `next.config.ts` | Next standalone、serverExternalPackages、remote images |
-| `tsconfig.json` | TS 编译约束，排除 Python 子服务 |
-| `eslint.config.mjs` | 规则 + 忽略项（`components/ui/**` 被忽略） |
-| `.env.example` | 主服务环境变量模板 |
-| `README.md` | 仍是 Next 默认模板，未反映真实业务 |
-
----
-
-## 3. 技术栈与框架
-
-### 3.1 主服务（Node/前后端一体）
-
-1. 框架：`next@16.1.6`（App Router）
-2. 前端：`react@19.2.3` + TypeScript
-3. 样式：`tailwindcss@4` + `tw-animate-css`
-4. 组件体系：shadcn/ui + Radix UI 套件
-5. 状态：`zustand`
-6. 校验：`zod` + `react-hook-form`
-7. 鉴权：`jose`（JWT + HttpOnly Cookie）
-8. 数据访问：`prisma@7.3.0` + `@prisma/adapter-mariadb`
-9. 向量检索：`@zilliz/milvus2-sdk-node`
-10. 对象存储：`ali-oss`（动态 require）
-11. 短信：阿里云 `@alicloud/dysmsapi20170525`
-
-### 3.2 向量子服务（Python）
-
-1. 框架：FastAPI
-2. 模型：Transformers + Torch（`facebook/dinov3-vitl16-pretrain-lvd1689m`）
-3. 接口：`POST /v1/vectorize`（Bearer 鉴权）
-4. 环境管理：`pydantic-settings`
-5. 依赖管理：`pyproject.toml + uv.lock + requirements.txt`
-
----
-
-## 4. package.json 深度解析
-
-### 4.1 Scripts（接手常用）
-
-1. `pnpm dev`：Next 开发模式。
-2. `pnpm build`：生产构建。
-3. `pnpm start`：生产启动。
-4. `pnpm lint`：ESLint。
-5. `pnpm prisma:business:*`：业务库 generate/migrate/studio。
-6. `pnpm prisma:external:*`：外部库 pull/generate/studio。
-7. `pnpm auth:config:init`：初始化认证方式表。
-8. `pnpm search:config:init`：初始化全局检索价格。
-9. `pnpm system:config:init`：组合执行两类初始化脚本。
-
-### 4.2 依赖使用现状
-
-从源码静态导入看，主干依赖覆盖了 UI、鉴权、数据库、Milvus、短信、表单、状态管理。
-
-“疑似未直接使用（仅 package.json 声明）”依赖：
-
-1. `@tanstack/react-query`
-2. `@tanstack/react-query-devtools`
-3. `alipay-sdk`
-4. `date-fns`
-5. `immer`
-
-说明：`ali-oss` 虽未静态 import，但在 `lib/server/trademark-search/oss.ts` 中通过 `createRequire` 动态加载，属于已使用依赖。
-
----
-
-## 5. 代码结构与主业务链路
-
-## 5.1 前端入口
-
-1. 路由入口：`app/(site)/page.tsx`。
-2. 页面主壳：`components/patent-lens/app-shell.tsx`。
-3. 状态中心：`stores/patent-lens.ts`。
-4. API 客户端：`lib/api/index.ts` + `lib/api/client.ts`。
-
-## 5.2 主业务流程（检索）
-
-1. 用户登录后上传图片（Base64 Data URL）。
-2. `POST /api/search` 做参数校验（zod）。
-3. 读取会话 + 账户（`resolveSessionContext`）。
-4. 获取生效价格（用户价优先，回退全局价）。
-5. 校验余额，不足返回 `402`。
-6. 图片解码、计算 sha256、生成 OSS objectKey。
-7. 上传查询图到 OSS 并获得签名 URL。
-8. 调用 FastAPI 向量接口取向量。
-9. 使用 Milvus 搜索向量 TopK。
-10. 用命中的 publication/serial 关联外部库 `patent_design`。
-11. 在事务内扣费并写流水（`trsanction`）+ 检索记录。
-12. 返回结果、消耗、余额、历史主键。
-
-## 5.3 API 路由清单
-
-| 路由 | 方法 | 是否需要会话 | 功能 |
-|---|---|---|---|
-| `/api/auth/config` | GET | 否 | 获取登录方式开关 |
-| `/api/auth/login/password` | POST | 否 | 用户名密码登录 |
-| `/api/auth/login/sms` | POST | 否 | 短信登录 |
-| `/api/auth/register` | POST | 否 | 注册并登录 |
-| `/api/auth/sms` | POST | 否 | 发送短信验证码 |
-| `/api/auth/logout` | POST | 否 | 清会话 Cookie |
-| `/api/auth/me` | GET | 是 | 返回当前用户和账户 |
-| `/api/search/price` | GET | 是 | 获取当前检索价格和余额 |
-| `/api/search` | POST | 是 | 发起检索并扣费 |
-| `/api/search/history` | GET | 是 | 最近 50 条历史 |
-| `/api/history/clear` | POST | 是 | 清空个人历史 |
-| `/api/recharge` | POST | 是 | 套餐充值（直充） |
-
-## 5.4 认证体系
-
-1. JWT：HS256，`sub` 存 userId。
-2. Cookie：`httpOnly + sameSite=lax + secure(生产)`。
-3. 密码：Node `scrypt` + salt 哈希。
-4. 短信码：HMAC-SHA256 存 hash，含过期/冷却/尝试次数。
-5. 登录方式可配置（`AuthMethodConfig`）。
-
----
-
-## 6. 数据层设计
-
-## 6.1 业务库（`prisma/business/schema.prisma`）
-
-核心模型：
-
-1. `User`
-2. `Account`（余额 BigInt）
-3. `AuthMethodConfig`
-4. `VerificationCode`
-5. `SearchPrice`（全局价 + 用户特价）
-6. `Transaction`（映射表名 `trsanction`）
-7. `TrademarkSearchRecord`（完整链路审计快照）
-
-迁移历史：
-
-1. `20260208145005_init_user_account`
-2. `20260223130837_remove_user_credits`
-3. `20260301142458_add_trademark_search_pricing_and_records`
-
-## 6.2 外部库（`prisma/external/schema.prisma`）
-
-1. 仅 `patent_design` 模型。
-2. 项目只读查询，不维护迁移。
-
-## 6.3 Prisma 生成客户端注意事项（关键）
-
-源码直接引用了 `@/prisma/generated/business/*` 和 `@/prisma/generated/external/*`。
-
-这些生成文件不在 Git 跟踪中，接手后必须先执行：
-
-```bash
-pnpm prisma:business:generate
-pnpm prisma:external:generate
-```
-
-否则编译会缺少类型与 client。
-
----
-
-## 7. 目录详细分析（逐目录）
-
-## 7.1 `app/`
-
-1. `layout.tsx`：加载本地字体、全局 metadata。
-2. `globals.css`：Tailwind v4 设计令牌 + 动效类。
-3. `api/*/route.ts`：所有后端接口都在这里。
-
-设计特征：采用 Next BFF 结构，前后端同仓，减少跨仓协调成本。
-
-## 7.2 `components/`
-
-### `components/patent-lens/`
-
-业务组件集中在这个目录，含：
-
-1. `app-shell.tsx`：页面状态中枢与 API 编排。
-2. `auth-dialog.tsx`：登录/注册/SMS 表单交互。
-3. `upload-section.tsx`：上传、拖拽、检索触发。
-4. `search-results.tsx`：结果卡片。
-5. `history-sidebar.tsx`：历史记录侧栏。
-6. `patent-detail.tsx`：详情弹窗。
-7. `recharge-dialog.tsx`：充值套餐。
-8. `header.tsx`/`landing.tsx`/`footer.tsx`：导航与营销展示。
-
-### `components/ui/`
-
-1. 共 53 个 shadcn/Radix 原子组件。
-2. 基本无业务逻辑，偏模板化基础层。
-3. 已被 ESLint 忽略（避免模板代码告警噪音）。
-
-## 7.3 `hooks/`
-
-1. 当前仅 `use-mobile.ts`，用于断点识别。
-
-## 7.4 `lib/`
-
-### `lib/api/`
-
-1. `client.ts`：统一请求函数，统一 `ApiResponse`。
-2. `index.ts`：前端 API 方法集合。
-
-### `lib/auth/`
-
-1. `jwt.ts`：签发/验签/写删 cookie。
-2. `session.ts`：会话解析和账户补建。
-3. `password.ts`：scrypt 哈希验证。
-4. `sms.ts`：阿里云短信发送。
-5. `verification.ts`：短信验证码生命周期。
-6. `config.ts`：登录方式开关。
-7. `user.ts`：DB -> API DTO 映射。
-
-### `lib/db/`
-
-1. `adapter.ts`：MariaDB adapter 封装。
-2. `db-url.ts`：连接串解析 + SSL 选项。
-3. `business.ts`/`external.ts`：Prisma Client 单例。
-
-### `lib/server/trademark-search/`
-
-1. `service.ts`：检索主编排（最核心）。
-2. `pricing.ts`：价格策略。
-3. `account-ledger.ts`：账户扣费与流水。
-4. `vectorizer.ts`：调用 FastAPI 向量接口。
-5. `milvus.ts`：向量检索。
-6. `repository.ts`：外部库匹配与结果组装。
-7. `oss.ts`：上传/签名 URL。
-8. `utils.ts`：解码、哈希、对象键构造、BigInt/JSON 安全转换。
-
-### `lib/validation/`
-
-1. `auth.ts`：注册/登录/SMS 校验。
-2. `search.ts`：检索/充值校验。
-
-## 7.5 `prisma/`
-
-1. `business/`：业务 schema + migration + prisma config。
-2. `external/`：外部 schema + prisma config。
-3. `generated/`：本地生成客户端目录（不在 Git 跟踪）。
-
-## 7.6 `scripts/`
-
-1. `init-auth-method-config.ts`：初始化 `PASSWORD/SMS` 开关。
-2. `init-trademark-search-config.ts`：初始化全局检索价格，支持 `--force-amount`。
-
-## 7.7 `services/vector-api-fastapi/`
-
-1. `app/main.py`：应用入口、生命周期、鉴权、路由。
+## 2. 仓库目录全量分析（逐目录）
+
+> 下面覆盖仓库顶层主要目录职责，供新同学/AI Agent快速定位。
+
+| 目录 | 职责 | 关键说明 |
+|---|---|---|
+| `.github/` | CI/CD 工作流 | 包含 CI、Docker 构建推送工作流 |
+| `.next/` | Next 构建产物 | 本地构建缓存与输出，非源码 |
+| `.pnpm-store/` | 依赖缓存 | pnpm 本地缓存 |
+| `.vscode/` | IDE 配置 | 本地开发器配置 |
+| `app/` | Next App Router 主目录 | 页面入口、所有 BFF API 路由 |
+| `components/` | 前端组件 | `patent-lens` 业务组件 + `ui` 基础组件 |
+| `doc/` | 项目文档 | 运维、环境、交接文档 |
+| `helloagents/` | 历史方案与知识库 | 过程资产，不是运行时依赖 |
+| `hooks/` | React Hooks | 通用 Hook（当前体量较小） |
+| `lib/` | 核心业务代码 | 鉴权、数据库、支付、检索服务、API客户端 |
+| `prisma/` | 数据模型与迁移 | business/external 双 schema + migration + generated client |
+| `public/` | 静态资源 | 本地字体、静态图片 |
+| `scripts/` | 初始化脚本 | 认证、检索价格、支付配置初始化 |
+| `services/` | 子服务 | FastAPI 向量服务（独立部署） |
+| `stores/` | 前端状态管理 | Zustand 全局状态 |
+| `tmp/` | 临时目录 | 本地临时文件 |
+| `types/` | TS 声明补充 | 第三方类型补充（如 `qrcode`） |
+| `node_modules/` | 依赖安装目录 | 非源码 |
+
+### 2.1 `app/` 细分
+
+1. `app/(site)/page.tsx`：站点入口页面。
+2. `app/api/**/route.ts`：后端接口（鉴权、检索、支付、历史、订单、交易）。
+3. `app/layout.tsx`：全局字体和页面壳。
+4. `app/globals.css`：全局样式变量与效果。
+
+### 2.2 `components/` 细分
+
+1. `components/patent-lens/*`：核心业务 UI（上传、结果、历史、充值弹窗等）。
+2. `components/ui/*`：通用 UI 组件库（基本来自 shadcn 体系）。
+
+### 2.3 `lib/` 细分（重点）
+
+1. `lib/api/*`：前端请求封装与 API 方法。
+2. `lib/auth/*`：JWT、会话、用户转换。
+3. `lib/db/*`：Prisma Client 单例与连接参数。
+4. `lib/server/trademark-search/*`：检索业务编排（上传、向量化、Milvus、扣费、历史记录）。
+5. `lib/server/payment/*`：支付宝网关适配、订单服务、定时任务。
+6. `lib/money.ts`：分/元换算工具（统一金额语义）。
+7. `lib/types.ts`：前后端共享 TS 类型。
+
+### 2.4 `prisma/` 细分
+
+1. `prisma/business/schema.prisma`：业务核心模型。
+2. `prisma/business/migrations/*`：业务迁移历史。
+3. `prisma/external/schema.prisma`：外部库读取模型（只读场景）。
+4. `prisma/generated/*`：Prisma 生成客户端（业务和外部）。
+
+### 2.5 `services/vector-api-fastapi/` 细分
+
+1. `app/main.py`：FastAPI 入口。
 2. `app/inference.py`：模型加载与向量推理。
-3. `app/config.py`：环境变量配置。
-4. `app/schemas.py`：请求响应模型。
-5. `Dockerfile`/`docker-compose.yml`：容器化运行。
-6. `pyproject.toml` + `uv.lock` + `requirements.txt`：依赖管理。
-
-说明：该目录存在本地 `.venv`，属于开发环境产物，不应纳入源码评审。
-
-## 7.8 `stores/`
-
-1. `patent-lens.ts`：登录态、余额、历史缓存与操作器。
-
-## 7.9 `types/`
-
-1. `ali-oss.d.ts`：动态 require 场景下的模块声明补丁。
-
-## 7.10 `public/`
-
-1. 字体文件和图标资源。
-2. 结果图并不来自 `public`，来自 OSS / 外部 URL。
-
-## 7.11 `doc/`
-
-已有文档覆盖 env、CI、部署初始化，但需要与当前代码持续比对更新。
-
-## 7.12 `helloagents/`
-
-1. 内部协作知识库、历史方案、wiki。
-2. 部分内容与当前代码存在漂移（见风险章节）。
-
-## 7.13 `.github/workflows/`
-
-1. `ci.yml`：Node lint。
-2. `docker-build-push.yml`：主服务多架构镜像构建与发布。
-3. `vector-api-fastapi-ci.yml`：子服务 lint + 构建发布。
+3. `app/config.py`：服务配置读取。
+4. `app/schemas.py`：接口输入输出 Schema。
+5. `Dockerfile` / `docker-compose.yml`：子服务容器化。
 
 ---
 
-## 8. 环境变量与外部系统依赖
+## 3. 框架与架构设计
 
-主服务最低依赖（摘要）：
+## 3.1 主服务技术栈
 
-1. 两套 MySQL：`BUSINESS_DATABASE_URL`、`EXTERNAL_DATABASE_URL`
-2. JWT：`JWT_SECRET` 等
-3. 短信：阿里云 SMS AK/SK + 签名模板
-4. OSS：桶、地域、AK/SK
-5. Milvus：地址、集合名、检索参数
-6. 向量接口：`VECTOR_API_ENDPOINT`、`VECTOR_API_KEY`
+1. 框架：`next@16.1.6`（App Router）。
+2. 前端：`react@19.2.3` + Tailwind CSS v4。
+3. 数据层：`prisma@7` + MariaDB adapter。
+4. 鉴权：`jose` + HttpOnly Cookie。
+5. 状态管理：`zustand`。
+6. 表单与校验：`react-hook-form` + `zod`。
+7. 支付：`alipay-sdk` + `qrcode` + `croner`。
+8. 观测：`pino` + `AsyncLocalStorage`（traceId 链路透传）。
 
-子服务最低依赖（摘要）：
+## 3.2 关键设计模式（工程化）
 
-1. 模型 ID 与设备策略
-2. `VECTOR_API_KEY`
-3. 可选 `HF_TOKEN`（gated 模型）
-
-重点一致性约束：
-
-1. 主服务 `VECTOR_API_KEY` 必须与子服务一致。
-2. `VECTOR_DIMENSION` 必须与向量模型输出、Milvus 集合维度一致。
-
----
-
-## 9. CI/CD 与容器
-
-## 9.1 主服务 Docker
-
-1. Node 22 alpine 多阶段构建。
-2. 构建阶段先 `prisma generate` 再 `next build`。
-3. 运行阶段使用 Next standalone 产物。
-4. `.dockerignore` 排除了 `doc/`、`helloagents/`、`tmp/`。
-
-## 9.2 GitHub Actions
-
-1. Node CI：`pnpm lint`。
-2. 主服务 Docker workflow：PR 构建校验，主分支推送镜像。
-3. Vector API workflow：ruff + compile check + Docker 多架构发布。
+1. 网关适配模式：`lib/server/payment/alipay.ts`
+   - 屏蔽支付宝 SDK 细节，对外暴露统一方法（下单/查单/关单/验签）。
+2. 领域服务模式：`lib/server/payment/charge-orders.ts`
+   - 聚合订单、账户、流水更新的业务规则和事务边界。
+3. 薄路由模式：`app/api/**/route.ts`
+   - 路由仅做鉴权、参数校验、返回码映射；核心逻辑交给服务层。
+4. 单例资源模式：Prisma 客户端、支付 SDK、Scheduler 使用全局单例。
+5. 幂等 + 行锁模式：支付回调与补偿路径均使用事务和 `FOR UPDATE` 防重复入账。
 
 ---
 
-## 10. 实测验证结果（本次分析过程）
+## 4. package.json 全解析
 
-已执行并确认：
+## 4.1 Scripts
 
-1. `pnpm lint`：通过，仅 1 条 warning（`patent-detail.tsx` 的 `setState in effect`）。
-2. `pnpm build`：在放宽沙箱限制后成功完成，路由产物正常。
-3. `services/vector-api-fastapi`：`.venv/bin/ruff check app` 通过。
-4. `python3 -m compileall -q services/vector-api-fastapi/app` 通过。
+| Script | 作用 |
+|---|---|
+| `dev` | Next 开发模式 |
+| `build` | Next 构建（默认 Turbopack） |
+| `start` | Next 生产启动 |
+| `lint` / `lint:fix` | ESLint 检查/自动修复 |
+| `prisma:business:generate` | 生成业务库 Prisma Client |
+| `prisma:business:migrate:dev` | 业务库开发迁移 |
+| `prisma:business:migrate:deploy` | 业务库生产迁移 |
+| `prisma:business:studio` | 业务库可视化 |
+| `prisma:external:pull/generate/studio` | 外部库建模同步 |
+| `auth:config:init` | 初始化认证方式配置 |
+| `search:config:init` | 初始化检索价格配置 |
+| `payment:config:init` | 初始化支付配置（支付宝） |
+| `system:config:init` | 一键初始化 auth + search + payment |
 
-说明：`pnpm build` 在默认沙箱下会触发 Turbopack 端口绑定限制导致失败，这属于执行环境限制，不是代码构建错误。
+## 4.2 依赖分类（主要）
 
----
-
-## 11. 当前风险与技术债
-
-1. `README.md` 仍是 Next 默认模板，接手成本高。
-2. 自动化测试缺失（Node/Python 都无业务测试）。
-3. `components/ui/**` 被 ESLint 全量忽略，模板改坏难被发现。
-4. `helloagents/wiki` 中部分描述已过时：
-   1. 仍描述“向量 API 伪实现/可回退 mock”。
-   2. 部分记录提到短信 SDK 20180501，但当前代码为 20170525。
-5. 依赖治理未完成：存在疑似未使用依赖（React Query、Alipay SDK 等）。
-6. 鉴权与风控仍偏轻：
-   1. 登录/检索接口无统一限流。
-   2. 注册验证码图形校验在前端本地生成，不具备强安全性。
-7. 运维耦合高：外部系统较多（双 MySQL + OSS + Milvus + FastAPI），本地搭建复杂。
-
----
-
-## 12. 新接手人员操作手册（Human + AI Agent）
-
-## 12.1 首次接手 Checklist
-
-1. 安装 Node 22 + pnpm 10。
-2. 安装 Python 3.12（子服务建议 uv）。
-3. 复制并填写 `.env` 与 `services/vector-api-fastapi/.env`。
-4. 启动 MySQL（business/external）与 Milvus。
-5. 安装依赖：`pnpm install`。
-6. 生成 Prisma 客户端：
-
-```bash
-pnpm prisma:business:generate
-pnpm prisma:external:generate
-```
-
-7. 迁移业务库：
-
-```bash
-pnpm prisma:business:migrate:deploy
-```
-
-8. 初始化系统配置：
-
-```bash
-pnpm system:config:init
-```
-
-9. 启动向量子服务：
-
-```bash
-cd services/vector-api-fastapi
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1
-```
-
-10. 启动主服务：
-
-```bash
-pnpm dev
-```
-
-## 12.2 冒烟验证顺序
-
-1. `POST /api/auth/register` 或登录。
-2. `GET /api/search/price`。
-3. `POST /api/search`（上传图）。
-4. 检查余额与流水变化。
-5. `GET /api/search/history`。
-6. `POST /api/history/clear`。
-7. `POST /api/recharge`。
-
-## 12.3 AI Agent 接手建议
-
-1. 先读 `lib/server/trademark-search/service.ts`，再读 `app/api/search/route.ts`。
-2. 修改数据逻辑前先核对 `prisma/business/schema.prisma` 与迁移。
-3. 涉及图片结果时先判断 URL 来源是 `imageList` 还是 OSS 签名。
-4. 任何改动后至少执行：`pnpm lint` 与 `pnpm build`。
-5. 文档变更优先同步 `doc/` 与 `helloagents/wiki`，避免继续漂移。
+1. UI 体系：Radix + shadcn 组件集。
+2. 服务端能力：Prisma、Aliyun SDK、Milvus SDK、OSS。
+3. 支付能力：`alipay-sdk`、`qrcode`、`croner`。
+4. 数据校验/状态：`zod`、`zustand`。
 
 ---
 
-## 13. 建议的近期治理优先级
+## 5. 数据模型设计（重点）
 
-1. 重写 `README.md`（替换默认模板，接入本指南关键段落）。
-2. 增加最小测试集：
-   1. API 合约测试（auth/search/recharge）。
-   2. `service.ts` 的核心流程单测（mock OSS/Milvus/Vector API）。
-3. 清理未使用依赖并锁定依赖策略。
-4. 修复文档漂移（`helloagents/wiki` 与代码一致化）。
-5. 为检索/充值加限流与幂等设计。
+## 5.1 现有核心模型
+
+1. `User`：用户主体。
+2. `Account`：账户余额（`BigInt`，单位：分）。
+3. `Transaction`：资金流水（充值、扣费等，支持 `bizId` 业务外联）。
+4. `TrademarkSearchRecord`：每次检索审计与结果快照。
+
+## 5.2 新增支付模型（本次）
+
+1. `PaymentConfig`
+   - 支付渠道配置（非敏感配置落库，敏感密钥走环境变量）。
+   - 字段覆盖：provider、displayName、status、限额、预设金额、publicConfig。
+2. `ChargeOrder`
+   - 通用充值订单模型。
+   - 支持 provider、平台单号、支付凭证、状态机、过期时间、元数据、交易关联。
+
+## 5.3 新增枚举（本次）
+
+1. `PaymentMethod`：`balance/wechat/stripe/alipay/manual`
+2. `PaymentProvider`：`wechat/alipay/stripe`
+3. `PaymentConfigStatus`：`enabled/disabled`
+4. `ChargeOrderStatus`：`pending/processing/success/failed/closed`
 
 ---
 
-## 14. 关键文件导航（快速跳转）
+## 6. 金额体系（必须遵守）
 
-1. 主流程编排：`lib/server/trademark-search/service.ts`
-2. 检索 API：`app/api/search/route.ts`
-3. 认证会话：`lib/auth/session.ts`
-4. 数据模型：`prisma/business/schema.prisma`
-5. 外部库模型：`prisma/external/schema.prisma`
-6. 前端主壳：`components/patent-lens/app-shell.tsx`
-7. 状态管理：`stores/patent-lens.ts`
-8. 向量服务入口：`services/vector-api-fastapi/app/main.py`
-9. 向量推理核心：`services/vector-api-fastapi/app/inference.py`
-10. 环境变量配置：`lib/env.ts` 与 `services/vector-api-fastapi/app/config.py`
+统一规则：
 
+1. 数据库存储与计算：`分`（BigInt）。
+2. 前端展示与 API 展示字段：`元`（number，保留两位）。
+3. 换算工具：`lib/money.ts`
+   - `fenToYuan`
+   - `yuanToFen`
+   - `yuanToFenNumber`
+   - `formatYuan`
+
+当前已统一的关键接口：
+
+1. `/api/auth/me` 返回 `account.balance` 为元。
+2. `/api/search/price` 返回 `amount/balance` 为元。
+3. 检索结果和历史中的 `cost/balance` 为元。
+4. 充值/订单/交易列表展示均为元。
+
+---
+
+## 7. 支付架构与接口设计（本次新增）
+
+## 7.1 支付状态保障策略
+
+采用三层兜底：
+
+1. 主路径：`notify`（支付宝异步回调）
+   - 实时性最好，支付成功后优先入账。
+2. 前端兜底：`query-order` 轮询
+   - 用户支付后前端主动查单，发现平台成功但本地未更新时自动补账。
+3. 后端兜底：`Croner` 定时任务
+   - 周期同步 pending 订单状态；超时订单自动关闭。
+
+三条路径并存不会重复加钱：
+
+1. 订单处理在事务内执行。
+2. 使用 `FOR UPDATE` 行锁。
+3. 幂等判断：订单已 success 则直接返回。
+
+## 7.2 支付 API 清单
+
+1. `POST /api/alipay/create-order`
+   - 创建支付宝充值订单，返回二维码与过期时间。
+2. `POST /api/recharge`
+   - 统一充值下单入口（当前默认 provider=alipay，后续可扩展微信/Stripe）。
+3. `GET /api/alipay/query-order?outTradeNo=...|chargeOrderId=...`
+   - 查询订单状态，必要时触发补偿入账。
+4. `POST /api/alipay/close-order`
+   - 主动关闭订单（取消支付/超时关单）。
+5. `POST /api/alipay/notify`
+   - 支付宝回调，验签后处理到账。
+6. `GET /api/payment/config`
+   - 获取支付配置可用性与公开配置。
+7. `GET /api/recharge/orders`
+   - 查询用户充值订单。
+8. `GET /api/transactions?kind=all|recharge|expense`
+   - 查询交易记录（含消费记录）。
+
+支付平台文档参考：
+
+1. 支付宝开放平台（当面付/交易接口）：<https://opendocs.alipay.com/open/270>
+
+---
+
+## 8. 定时任务设计（Croner）
+
+定时任务入口：`lib/server/payment/scheduler.ts`  
+启动入口：根目录 `instrumentation.ts`
+
+任务：
+
+1. pending 订单同步：`syncPendingAlipayOrders`
+2. 超时订单关闭：`closeExpiredPendingOrders`
+
+Cron 表达式由环境变量控制：
+
+1. `PAYMENT_ORDER_SYNC_CRON`
+2. `PAYMENT_ORDER_CLOSE_CRON`
+3. `PAYMENT_ORDER_PROCESSING_STALE_SECONDS`
+
+关键点：
+
+1. 使用 `Croner` 的 `protect: true`，避免同任务重入。
+2. 使用全局状态防止重复启动。
+3. 后端轮询采用“领取任务（`FOR UPDATE SKIP LOCKED`）+ `processing` 状态”减少多实例重复处理。
+4. `processing` 订单超时可回收，避免 worker 异常导致卡单。
+5. 每次任务执行生成 `traceId`，输出结构化日志：`job.start / job.finish / job.error`。
+
+参考文档：
+
+1. Croner 官方文档：<https://croner.56k.guru/getting-started/>
+2. Croner GitHub：<https://github.com/Hexagon/croner>
+
+---
+
+## 9. 前端当前主设计
+
+## 9.1 页面布局
+
+1. 顶部：Header（余额、登录态、充值入口）。
+2. 左侧：历史检索侧栏。
+3. 中间：上传与搜索配置区域。
+4. 底部：结果与详情抽屉。
+
+## 9.2 充值弹窗（本次重构）
+
+`components/patent-lens/recharge-dialog.tsx` 已改造为：
+
+1. Tab1「发起充值」
+   - 读取支付配置
+   - 选择预设金额或自定义金额
+   - 创建订单并展示支付宝二维码
+   - 订单状态轮询与倒计时
+   - 支持主动取消订单
+2. Tab2「订单与账单」
+   - 充值订单列表
+   - 交易记录列表（全部/充值/消费筛选）
+
+交互目标：
+
+1. 用户尽量不离开当前页面即可完成支付。
+2. 支付成功后自动刷新余额与账单。
+
+---
+
+## 10. 环境变量（支付新增部分）
+
+### 10.1 支付网关
+
+1. `ALIPAY_APP_ID`
+2. `ALIPAY_PRIVATE_KEY`
+3. `ALIPAY_PUBLIC_KEY`
+4. `ALIPAY_NOTIFY_URL`
+5. `ALIPAY_GATEWAY`
+
+### 10.2 后端补偿任务
+
+1. `PAYMENT_SCHEDULER_ENABLED`
+2. `PAYMENT_ORDER_TIMEOUT_MINUTES`
+3. `PAYMENT_ORDER_SYNC_CRON`
+4. `PAYMENT_ORDER_CLOSE_CRON`
+5. `PAYMENT_ORDER_SYNC_BATCH_SIZE`
+6. `PAYMENT_ORDER_CLOSE_BATCH_SIZE`
+7. `PAYMENT_ORDER_PROCESSING_STALE_SECONDS`
+
+### 10.3 日志与追踪
+
+1. `LOG_LEVEL`
+
+---
+
+## 11. 初始化与启动流程（接手必做）
+
+1. 安装依赖：`pnpm install`
+2. 生成 Prisma Client：
+   - `pnpm prisma:business:generate`
+   - `pnpm prisma:external:generate`
+3. 执行数据库迁移：`pnpm prisma:business:migrate:deploy`
+4. 初始化系统配置：`pnpm system:config:init`
+5. 启动开发：`pnpm dev`
+
+支付上线前最小验证：
+
+1. 创建充值订单成功。
+2. 支付成功时 notify 可入账。
+3. notify 不可达时，前端 query-order 可补账。
+4. 长时间 pending 能被后端任务同步/关闭。
+
+---
+
+## 12. API 与目录接手建议（给 AI Agent）
+
+建议执行顺序：
+
+1. 先读 `lib/server/payment/charge-orders.ts`（业务真相）。
+2. 再读 `app/api/alipay/*`（接口编排）。
+3. 再读 `components/patent-lens/recharge-dialog.tsx`（前端交互流）。
+4. 再读 `doc/logging-trace-guide.md`（日志链路与 trace 规范）。
+5. 再读 `doc/payment-integration-manual.md`（支付接入与默认配置总手册）。
+6. 最后读 `prisma/business/schema.prisma`（数据边界）。
+
+变更原则：
+
+1. 资金相关逻辑必须进事务。
+2. 订单状态机修改要同时校验 notify/query/cron 三条路径。
+3. 新增金额字段必须声明单位（分或元）。
+4. 优先改服务层，再让路由保持薄控制器。
+
+---
+
+## 13. 风险点与排错清单
+
+## 13.1 高风险点
+
+1. 任意新增充值入口绕过订单体系导致错账。
+2. 金额单位混用（分/元）导致错账。
+3. notify 验签失败导致支付成功未入账。
+4. 未启用 scheduler 导致 pending 订单积压。
+
+## 13.2 快速排错
+
+1. 下单失败：检查 `payment_configs`、`ALIPAY_*` 环境变量、网关连通性。
+2. 回调失败：检查 `ALIPAY_NOTIFY_URL`、签名配置、公钥是否正确。
+3. 入账重复担忧：查 `ChargeOrder.status` 和 `Transaction.bizId` 是否幂等。
+4. 订单不关闭：检查 Cron 配置和 `instrumentation.ts` 是否在运行实例加载。
+
+---
+
+## 14. 当前改造摘要（2026-03-02）
+
+本次已完成：
+
+1. 支付配置表 + 充值订单表 + 枚举模型落地。
+2. 支付服务分层（网关适配、订单领域服务、调度器）。
+3. 支付 API 全链路（create/query/close/notify + config/orders/transactions）。
+4. 前端充值弹窗升级到支付宝支付闭环。
+5. 金额单位统一到「库内分、展示元」。
+6. 新增支付配置初始化脚本并接入系统初始化命令。
+
+---
+
+## 15. 后续优化建议
+
+1. 增加支付与资金相关单元测试/集成测试（当前以运行验证为主）。
+2. 已完成支付全链路统一日志（API/领域服务/网关/调度）。建议下一步接入日志平台（ELK/Loki/Sentry）并按 `traceId` 建立查询面板。
+3. 为交易记录加入分页游标接口，避免长列表全量拉取。
+4. 为支付状态轮询改造为 SSE/WebSocket，减少轮询开销。
+5. 增加后台管理端（支付配置管理、人工补单、对账报表）。

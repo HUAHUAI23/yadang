@@ -18,6 +18,8 @@ export default function Header({
   onLogout,
   onLogin,
 }: HeaderProps) {
+  const balance = account?.balance ?? 0;
+
   return (
     <header className="sticky top-0 z-50 glass-effect border-b border-slate-200/50 shadow-sm">
       <div className="max-w-[1600px] mx-auto px-6 sm:px-10">
@@ -56,13 +58,14 @@ export default function Header({
                   <div className="flex items-center space-x-1.5 mt-0.5">
                     <span
                       className={`text-lg font-[900] ${
-                        (account?.balance ?? 0) < 20 ? "text-rose-500" : "text-slate-900"
+                        balance < 5 ? "text-rose-500" : "text-slate-900"
                       }`}
                     >
-                      {(account?.balance ?? 0).toLocaleString()}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      PTS
+                      ¥
+                      {balance.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                 </div>

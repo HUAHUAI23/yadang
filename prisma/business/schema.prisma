@@ -38,20 +38,48 @@ enum SearchRecordStatus {
   FAILED
 }
 
+enum PaymentMethod {
+  BALANCE @map("balance")
+  WECHAT  @map("wechat")
+  STRIPE  @map("stripe")
+  ALIPAY  @map("alipay")
+  MANUAL  @map("manual")
+}
+
+enum PaymentProvider {
+  WECHAT @map("wechat")
+  ALIPAY @map("alipay")
+  STRIPE @map("stripe")
+}
+
+enum PaymentConfigStatus {
+  ENABLED  @map("enabled")
+  DISABLED @map("disabled")
+}
+
+enum ChargeOrderStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  SUCCESS    @map("success")
+  FAILED     @map("failed")
+  CLOSED     @map("closed")
+}
+
 model User {
-  id                Int                @id @default(autoincrement())
-  username          String?            @unique
-  phone             String?            @unique
-  email             String?            @unique
-  avatar            String             @default("")
-  passwordHash      String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  account           Account?
-  searchPrices      SearchPrice[]
-  transactions      Transaction[]
-  searchRecords     TrademarkSearchRecord[]
-  verificationCodes VerificationCode[]
+  id                  Int                @id @default(autoincrement())
+  username            String?            @unique
+  phone               String?            @unique
+  email               String?            @unique
+  avatar              String             @default("")
+  passwordHash        String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  account             Account?
+  searchPrices        SearchPrice[]
+  transactions        Transaction[]
+  searchRecords       TrademarkSearchRecord[]
+  verificationCodes   VerificationCode[]
+  operatedChargeOrders ChargeOrder[]     @relation("UserOperatedChargeOrders")
 }
 
 model Account {
@@ -63,6 +91,7 @@ model Account {
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions  Transaction[]
   searchRecords TrademarkSearchRecord[]
+  chargeOrders  ChargeOrder[]
 }
 
 model SearchPrice {
@@ -97,11 +126,63 @@ model Transaction {
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   account       Account                @relation(fields: [accountId], references: [id], onDelete: Cascade)
   searchRecords TrademarkSearchRecord[]
+  chargeOrders  ChargeOrder[]
 
   @@index([userId, createdAt])
   @@index([accountId, createdAt])
   @@index([type, createdAt])
+  @@unique([bizId])
   @@map("trsanction")
+}
+
+model PaymentConfig {
+  id            Int                 @id @default(autoincrement())
+  provider      PaymentProvider     @unique
+  displayName   String              @db.VarChar(64)
+  description   String?             @db.Text
+  icon          String?             @db.Text
+  status        PaymentConfigStatus @default(ENABLED)
+  sortOrder     Int                 @default(0)
+  presetAmounts Json
+  minAmount     Int                 @default(1)
+  maxAmount     Int                 @default(100000)
+  publicConfig  Json
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  chargeOrders  ChargeOrder[]
+
+  @@index([status, sortOrder])
+}
+
+model ChargeOrder {
+  id                    Int               @id @default(autoincrement())
+  accountId             Int
+  amount                BigInt
+  provider              PaymentMethod
+  outTradeNo            String            @unique @db.VarChar(64)
+  externalTransactionId String?           @db.VarChar(64)
+  paymentCredential     Json
+  status                ChargeOrderStatus @default(PENDING)
+  expireTime            DateTime?
+  paidAt                DateTime?
+  transactionId         BigInt?
+  operatorId            Int?
+  paymentConfigId       Int?
+  metadata              Json
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  account               Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transaction           Transaction?      @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  operator              User?             @relation("UserOperatedChargeOrders", fields: [operatorId], references: [id], onDelete: SetNull)
+  paymentConfig         PaymentConfig?    @relation(fields: [paymentConfigId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, createdAt])
+  @@index([status, createdAt])
+  @@index([provider, createdAt])
+  @@index([outTradeNo])
+  @@index([externalTransactionId])
+  @@index([expireTime])
+  @@unique([provider, externalTransactionId])
 }
 
 model TrademarkSearchRecord {

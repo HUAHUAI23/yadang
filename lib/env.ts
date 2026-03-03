@@ -45,6 +45,36 @@ class EnvConfig {
     return Number.isFinite(value) && value > 0 ? value : fallback;
   }
 
+  private parseLogLevel(
+    key: string,
+    fallback: "fatal" | "error" | "warn" | "info" | "debug" | "trace" | "silent",
+  ) {
+    const raw = process.env[key];
+    if (!raw) return fallback;
+    const normalized = raw.trim().toLowerCase();
+    if (
+      [
+        "fatal",
+        "error",
+        "warn",
+        "info",
+        "debug",
+        "trace",
+        "silent",
+      ].includes(normalized)
+    ) {
+      return normalized as
+        | "fatal"
+        | "error"
+        | "warn"
+        | "info"
+        | "debug"
+        | "trace"
+        | "silent";
+    }
+    return fallback;
+  }
+
   private boolean(key: string) {
     const raw = process.env[key];
     if (!raw) return undefined;
@@ -257,8 +287,60 @@ class EnvConfig {
     return this.number("VECTOR_DIMENSION", 1024);
   }
 
+  get alipayAppId() {
+    return this.optionalString("ALIPAY_APP_ID") ?? this.optionalString("ALIPAY_APPID");
+  }
+
+  get alipayPrivateKey() {
+    return this.optionalString("ALIPAY_PRIVATE_KEY");
+  }
+
+  get alipayPublicKey() {
+    return this.optionalString("ALIPAY_PUBLIC_KEY");
+  }
+
+  get alipayNotifyUrl() {
+    return this.optionalString("ALIPAY_NOTIFY_URL");
+  }
+
+  get alipayGateway() {
+    return this.optional("ALIPAY_GATEWAY", "https://openapi.alipay.com/gateway.do");
+  }
+
+  get paymentOrderTimeoutMinutes() {
+    return this.number("PAYMENT_ORDER_TIMEOUT_MINUTES", 10);
+  }
+
+  get paymentSchedulerEnabled() {
+    return this.boolean("PAYMENT_SCHEDULER_ENABLED") ?? true;
+  }
+
+  get paymentOrderSyncCron() {
+    return this.optional("PAYMENT_ORDER_SYNC_CRON", "*/20 * * * * *");
+  }
+
+  get paymentOrderCloseCron() {
+    return this.optional("PAYMENT_ORDER_CLOSE_CRON", "*/30 * * * * *");
+  }
+
+  get paymentOrderSyncBatchSize() {
+    return this.number("PAYMENT_ORDER_SYNC_BATCH_SIZE", 50);
+  }
+
+  get paymentOrderCloseBatchSize() {
+    return this.number("PAYMENT_ORDER_CLOSE_BATCH_SIZE", 50);
+  }
+
+  get paymentOrderProcessingStaleSeconds() {
+    return this.number("PAYMENT_ORDER_PROCESSING_STALE_SECONDS", 120);
+  }
+
   get initialAccountBalance() {
     return this.number("INITIAL_ACCOUNT_BALANCE", 100);
+  }
+
+  get logLevel() {
+    return this.parseLogLevel("LOG_LEVEL", "info");
   }
 }
 

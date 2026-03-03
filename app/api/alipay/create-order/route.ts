@@ -9,33 +9,27 @@ import {
 } from "@/lib/server/payment/charge-orders";
 import { ensurePaymentSchedulersStarted } from "@/lib/server/payment/scheduler";
 import { jsonError, jsonOk } from "@/lib/server/response";
-import { createRechargeOrderPayloadSchema } from "@/lib/validation/payment";
-
-const parseClientIp = (request: Request) =>
-  request.headers.get("x-forwarded-for") ??
-  request.headers.get("x-real-ip") ??
-  "";
+import { createAlipayOrderPayloadSchema } from "@/lib/validation/payment";
 
 export async function POST(request: Request) {
   return withRequestTrace(request, async () => {
     const body = await request.json().catch(() => null);
 
     try {
-      const parsed = createRechargeOrderPayloadSchema.parse(body);
+      const parsed = createAlipayOrderPayloadSchema.parse(body);
       const session = await resolveSessionContext({ createAccountIfMissing: true });
       const amountYuan = parseRechargeAmount(parsed.amount);
 
       ensurePaymentSchedulersStarted();
 
-      if (parsed.provider !== "alipay") {
-        return jsonError(400, "当前仅支持支付宝充值");
-      }
-
       const result = await createAlipayChargeOrder({
         userId: session.user.id,
         accountId: session.account.id,
         amountYuan,
-        ip: parseClientIp(request),
+        ip:
+          request.headers.get("x-forwarded-for") ??
+          request.headers.get("x-real-ip") ??
+          "",
       });
 
       return jsonOk(result);
@@ -49,7 +43,7 @@ export async function POST(request: Request) {
       if (error instanceof ChargeOrderError) {
         return jsonError(error.status, error.message);
       }
-      return jsonError(500, (error as Error).message ?? "创建充值订单失败");
+      return jsonError(500, (error as Error).message ?? "创建订单失败");
     }
   });
 }

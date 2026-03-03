@@ -1,3 +1,4 @@
+import { fenToYuan } from "@/lib/money";
 import type { AccountState, AuthUser } from "@/lib/types";
 
 import "server-only";
@@ -18,13 +19,8 @@ export const toAuthAccount = (account: {
   id: number;
   balance: bigint;
 }): AccountState => {
-  const balance = Number(account.balance);
-  if (!Number.isFinite(balance)) {
-    throw new Error("账户余额超出可序列化范围");
-  }
-
   return {
     id: account.id,
-    balance,
+    balance: fenToYuan(account.balance),
   };
 };

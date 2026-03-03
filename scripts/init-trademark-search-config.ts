@@ -57,7 +57,7 @@ async function initTrademarkSearchConfig() {
 
   console.log("Initializing trademark search config...\n")
   console.log(
-    `· Target global price: ${targetAmount.toString()} credits (code=${SearchPriceCode.TRADEMARK_IMAGE_SEARCH})`,
+    `· Target global price: ${targetAmount.toString()} fen (code=${SearchPriceCode.TRADEMARK_IMAGE_SEARCH})`,
   )
   console.log(`· Force update amount: ${forceAmount ? "yes" : "no"}`)
 

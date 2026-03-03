@@ -195,10 +195,8 @@ export default function UploadSection({
                     预计消耗
                   </p>
                   <p className="text-4xl font-[900] text-slate-900">
-                    {cost}
-                    <span className="text-xs font-bold text-slate-400 ml-2 uppercase">
-                      积分
-                    </span>
+                    ¥
+                    {cost.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -225,12 +223,12 @@ export default function UploadSection({
 
               {currentBalance < cost && !isLoading && (
                 <p className="text-center mt-6 text-[10px] font-black text-rose-500 uppercase tracking-widest">
-                  积分余额不足，请先充值
+                  余额不足，请先充值
                 </p>
               )}
 
               <div className="mt-6 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <span>当前余额 {currentBalance} 积分</span>
+                <span>当前余额 ¥{currentBalance.toFixed(2)}</span>
                 <span>按账户价格扣费</span>
               </div>
             </div>
@@ -240,4 +238,3 @@ export default function UploadSection({
     </div>
   );
 }
-

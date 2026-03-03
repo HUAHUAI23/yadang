@@ -34,6 +34,38 @@ export async function applyAccountChange(
     throw new Error("账户变更金额不能为 0");
   }
 
+  if (input.bizId) {
+    const existed = await tx.transaction.findFirst({
+      where: { bizId: input.bizId },
+      select: {
+        id: true,
+        userId: true,
+        accountId: true,
+        type: true,
+        amount: true,
+        balanceBefore: true,
+        balanceAfter: true,
+      },
+    });
+
+    if (existed) {
+      if (
+        existed.userId !== input.userId ||
+        existed.accountId !== input.accountId ||
+        existed.type !== input.type ||
+        existed.amount !== input.delta
+      ) {
+        throw new Error(`交易幂等键冲突: ${input.bizId}`);
+      }
+
+      return {
+        transactionId: existed.id,
+        balanceBefore: existed.balanceBefore,
+        balanceAfter: existed.balanceAfter,
+      };
+    }
+  }
+
   const rows = await tx.$queryRaw<Array<{ balance: bigint | number }>>`
     SELECT balance
     FROM Account
