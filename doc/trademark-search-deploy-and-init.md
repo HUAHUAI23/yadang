@@ -130,7 +130,7 @@ pnpm payment:config:init -- --force-overwrite
 
 1. 初始化/更新 `PaymentConfig(provider=alipay)`。
 2. 同步最小/最大金额、预设金额、订单超时配置。
-3. 根据 `ALIPAY_APP_ID/ALIPAY_PRIVATE_KEY/ALIPAY_PUBLIC_KEY/ALIPAY_NOTIFY_URL` 自动启用或禁用支付配置。
+3. 根据 `ALIPAY_APP_ID/ALIPAY_PRIVATE_KEY/ALIPAY_PUBLIC_KEY` 自动启用或禁用支付配置。
 4. 默认只做必要更新（状态与公开配置），加 `--force-overwrite` 才全量覆盖展示和金额配置。
 
 ## 4. 部署与联调顺序

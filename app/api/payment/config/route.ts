@@ -1,9 +1,9 @@
 import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
 import { withRequestTrace } from "@/lib/server/logger";
+import { isAlipayEnabled } from "@/lib/server/payment/alipay";
 import {
   ChargeOrderError,
   getEnabledPaymentConfig,
-  upsertDefaultPaymentConfig,
 } from "@/lib/server/payment/charge-orders";
 import { jsonError, jsonOk } from "@/lib/server/response";
 
@@ -11,9 +11,16 @@ export async function GET(request: Request) {
   return withRequestTrace(request, async () => {
     try {
       await resolveSessionContext({ createAccountIfMissing: true });
-      await upsertDefaultPaymentConfig();
 
       try {
+        if (!isAlipayEnabled()) {
+          return jsonOk({
+            available: false,
+            payment: null,
+            message: "支付宝支付暂不可用",
+          });
+        }
+
         const { view } = await getEnabledPaymentConfig();
         return jsonOk({
           available: true,

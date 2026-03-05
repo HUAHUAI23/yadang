@@ -138,12 +138,11 @@
 1. `ALIPAY_APP_ID`
 2. `ALIPAY_PRIVATE_KEY`
 3. `ALIPAY_PUBLIC_KEY`
-4. `ALIPAY_NOTIFY_URL`
 
 说明：
 
-1. 这 4 项用于“是否启用支付宝支付”的核心判定。
-2. 任何一项缺失，支付配置会被初始化为 `disabled`。
+1. 这 3 项用于“是否启用支付宝支付”的核心判定。
+2. 任意一项缺失，支付配置会被初始化为 `disabled`。
 
 ## 7.2 建议显式配置（有默认值）
 
@@ -157,6 +156,7 @@
 6. `PAYMENT_ORDER_SYNC_BATCH_SIZE`（默认 `50`）
 7. `PAYMENT_ORDER_CLOSE_BATCH_SIZE`（默认 `50`）
 8. `PAYMENT_ORDER_PROCESSING_STALE_SECONDS`（默认 `120`）
+9. `ALIPAY_NOTIFY_URL`（建议显式配置为公网 HTTPS 回调地址）
 
 ---
 
@@ -177,7 +177,7 @@
 11. `PAYMENT_ORDER_CLOSE_BATCH_SIZE`
 12. `PAYMENT_ORDER_PROCESSING_STALE_SECONDS`
 
-其中“支付宝接入最小配置”只要求前 4 项；其余都有默认值，但生产强烈建议显式设置。
+其中“支付宝接入最小配置”只要求前 3 项；其余都有默认值，但生产强烈建议显式设置。
 
 ---
 
@@ -198,4 +198,3 @@ PAYMENT_ORDER_SYNC_BATCH_SIZE="50"
 PAYMENT_ORDER_CLOSE_BATCH_SIZE="50"
 PAYMENT_ORDER_PROCESSING_STALE_SECONDS="120"
 ```
-

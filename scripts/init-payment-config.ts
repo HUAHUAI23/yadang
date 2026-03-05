@@ -1,10 +1,12 @@
-import { businessPrisma } from "../lib/db/business"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
+
+import { resolveDatabaseOptions } from "../lib/db/db-url"
 import {
   buildAlipayPublicConfig,
   DEFAULT_PAYMENT_PRESET_AMOUNTS,
   parsePaymentPublicConfig,
 } from "../lib/server/payment/payment-config"
-import { Prisma } from "../prisma/generated/business/client"
+import { Prisma, PrismaClient } from "../prisma/generated/business/client"
 import {
   PaymentConfigStatus,
   PaymentProvider,
@@ -14,11 +16,33 @@ const ALIPAY_ENV_KEYS = {
   appId: "ALIPAY_APP_ID",
   privateKey: "ALIPAY_PRIVATE_KEY",
   publicKey: "ALIPAY_PUBLIC_KEY",
-  notifyUrl: "ALIPAY_NOTIFY_URL",
   timeoutMinutes: "PAYMENT_ORDER_TIMEOUT_MINUTES",
 }
 
 const DEFAULT_ORDER_TIMEOUT_MINUTES = 10
+const DB_ENV_KEY = "BUSINESS_DATABASE_URL"
+
+const resolveDatabaseUrl = () => {
+  const value = process.env[DB_ENV_KEY]
+  if (!value) {
+    throw new Error(`Missing env: ${DB_ENV_KEY}`)
+  }
+  return value
+}
+
+const businessPrisma = new PrismaClient({
+  adapter: new PrismaMariaDb(
+    resolveDatabaseOptions(resolveDatabaseUrl(), "BUSINESS_DATABASE_URL"),
+    {
+      onConnectionError: (error) => {
+        const err = error as { message?: string; code?: string } | null
+        const code = err?.code ? ` (${err.code})` : ""
+        const message = err?.message ?? "Unknown connection error"
+        console.error(`[BUSINESS_DATABASE_URL] MariaDB connection error${code}: ${message}`)
+      },
+    },
+  ),
+})
 
 const parsePositiveInt = (raw: string | undefined, fallback: number) => {
   if (!raw) return fallback
@@ -47,9 +71,8 @@ const resolveStatus = () => {
   const appId = process.env[ALIPAY_ENV_KEYS.appId]
   const privateKey = process.env[ALIPAY_ENV_KEYS.privateKey]
   const publicKey = process.env[ALIPAY_ENV_KEYS.publicKey]
-  const notifyUrl = process.env[ALIPAY_ENV_KEYS.notifyUrl]
 
-  return appId && privateKey && publicKey && notifyUrl
+  return appId && privateKey && publicKey
     ? PaymentConfigStatus.ENABLED
     : PaymentConfigStatus.DISABLED
 }

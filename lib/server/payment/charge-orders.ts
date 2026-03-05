@@ -297,6 +297,10 @@ export async function createAlipayChargeOrder(input: {
   amountYuan: number;
   ip: string;
 }) {
+  if (!isAlipayEnabled()) {
+    throw new ChargeOrderError(503, "支付宝支付暂不可用");
+  }
+
   const { config, view } = await getEnabledPaymentConfig();
 
   if (input.amountYuan < config.minAmount || input.amountYuan > config.maxAmount) {

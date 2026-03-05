@@ -1,5 +1,8 @@
-import { businessPrisma } from "../lib/db/business"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
+
+import { resolveDatabaseOptions } from "../lib/db/db-url"
 import { Prisma } from "../prisma/generated/business/client"
+import { PrismaClient } from "../prisma/generated/business/client"
 import { AuthMethod } from "../prisma/generated/business/enums"
 
 /**
@@ -12,6 +15,29 @@ import { AuthMethod } from "../prisma/generated/business/enums"
  */
 
 const DEFAULT_METHODS = [AuthMethod.PASSWORD, AuthMethod.SMS] as const
+const DB_ENV_KEY = "BUSINESS_DATABASE_URL"
+
+const resolveDatabaseUrl = () => {
+  const value = process.env[DB_ENV_KEY]
+  if (!value) {
+    throw new Error(`Missing env: ${DB_ENV_KEY}`)
+  }
+  return value
+}
+
+const businessPrisma = new PrismaClient({
+  adapter: new PrismaMariaDb(
+    resolveDatabaseOptions(resolveDatabaseUrl(), "BUSINESS_DATABASE_URL"),
+    {
+      onConnectionError: (error) => {
+        const err = error as { message?: string; code?: string } | null
+        const code = err?.code ? ` (${err.code})` : ""
+        const message = err?.message ?? "Unknown connection error"
+        console.error(`[BUSINESS_DATABASE_URL] MariaDB connection error${code}: ${message}`)
+      },
+    },
+  ),
+})
 
 async function initAuthMethodConfig() {
   console.log("Initializing auth method config...\n")

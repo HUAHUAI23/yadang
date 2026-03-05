@@ -21,8 +21,12 @@ type AlipayConfig = {
 type AlipaySdkResult = {
   code?: string;
   msg?: string;
+  subCode?: string;
+  subMsg?: string;
   sub_code?: string;
   sub_msg?: string;
+  traceId?: string;
+  trace_id?: string;
   [key: string]: unknown;
 };
 
@@ -46,7 +50,7 @@ const getConfiguredKeys = (): AlipayConfig | null => {
   };
 };
 
-export const isAlipayEnabled = () => Boolean(getConfiguredKeys() && env.alipayNotifyUrl);
+export const isAlipayEnabled = () => Boolean(getConfiguredKeys());
 
 const getAlipayClient = () => {
   if (globalForAlipay.alipayClient) {
@@ -64,6 +68,7 @@ const getAlipayClient = () => {
     alipayPublicKey: keys.alipayPublicKey,
     gateway: env.alipayGateway,
     signType: "RSA2",
+    keyType: keys.privateKey.includes("BEGIN PRIVATE KEY") ? "PKCS8" : "PKCS1",
   });
 
   if (process.env.NODE_ENV !== "production") {
@@ -74,22 +79,29 @@ const getAlipayClient = () => {
 };
 
 const normalizeResult = (result: AlipaySdkResult, action: string) => {
+  const code = readString(result, "code");
+  const gatewayMsg = readString(result, "msg");
+  const subCode = readString(result, "subCode", "sub_code");
+  const subMsg = readString(result, "subMsg", "sub_msg");
+  const gatewayTraceId = readString(result, "traceId", "trace_id");
+
   if (result.code !== SUCCESS_CODE) {
     gatewayLogger.error(
       {
         action,
-        code: result.code ?? "",
-        msg: result.msg ?? "",
-        subCode: result.sub_code ?? "",
-        subMsg: result.sub_msg ?? "",
+        code,
+        gatewayMsg,
+        subCode,
+        subMsg,
+        gatewayTraceId,
       },
       "payment.alipay.gateway-failed",
     );
-    const message =
-      (typeof result.sub_msg === "string" && result.sub_msg) ||
-      (typeof result.msg === "string" && result.msg) ||
-      `${action}失败`;
-    throw new Error(message);
+    const message = subMsg || gatewayMsg || `${action}失败`;
+    const suffix = [code ? `code=${code}` : "", subCode ? `subCode=${subCode}` : ""]
+      .filter(Boolean)
+      .join(", ");
+    throw new Error(suffix ? `${message} (${suffix})` : message);
   }
 
   return result;
@@ -128,10 +140,6 @@ export async function precreateAlipayOrder(input: {
   timeoutMinutes: number;
 }) {
   const notifyUrl = env.alipayNotifyUrl;
-  if (!notifyUrl) {
-    throw new Error("支付宝异步回调地址未配置");
-  }
-
   const sdk = getAlipayClient();
   gatewayLogger.info(
     {
@@ -143,16 +151,32 @@ export async function precreateAlipayOrder(input: {
   );
 
   try {
-    const result = (await sdk.exec("alipay.trade.precreate", {
-      notifyUrl,
+    const requestPayload: {
+      notifyUrl?: string;
+      bizContent: {
+        out_trade_no: string;
+        total_amount: string;
+        subject: string;
+        body?: string;
+        product_code: string;
+        timeout_express: string;
+      };
+    } = {
       bizContent: {
         out_trade_no: input.outTradeNo,
-        total_amount: fenToYuan(input.totalAmountFen),
+        total_amount: String(fenToYuan(input.totalAmountFen)),
         subject: input.subject,
         body: input.body,
         product_code: "FACE_TO_FACE_PAYMENT",
         timeout_express: `${input.timeoutMinutes}m`,
       },
+    };
+    if (notifyUrl) {
+      requestPayload.notifyUrl = notifyUrl;
+    }
+
+    const result = (await sdk.exec("alipay.trade.precreate", {
+      ...requestPayload,
     })) as AlipaySdkResult;
 
     const normalized = normalizeResult(result, "下单");
