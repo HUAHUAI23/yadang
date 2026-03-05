@@ -95,8 +95,8 @@ export default function AppShell() {
       return;
     }
 
-    const balance = account?.balance ?? 0;
-    if (balance < searchPrice) {
+    const balanceYuan = account?.balance ?? 0;
+    if (balanceYuan < searchPrice) {
       setIsRechargeOpen(true);
       return;
     }
@@ -136,18 +136,6 @@ export default function AppShell() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRecharge = async (packageId: string) => {
-    const response = await api.recharge(packageId);
-    if (response.code !== 0 || !response.data) {
-      window.alert(response.message ?? "充值失败，请稍后再试。");
-      return;
-    }
-
-    setBalance(response.data.balance);
-    setIsRechargeOpen(false);
-    window.alert(`充值成功！已增加 ${response.data.credits} 积分。`);
   };
 
   const handleSelectHistoryItem = (item: SearchHistoryItem) => {
@@ -231,7 +219,11 @@ export default function AppShell() {
       <RechargeDialog
         open={isRechargeOpen}
         onOpenChange={setIsRechargeOpen}
-        onRecharge={handleRecharge}
+        onRechargeSuccess={async () => {
+          await loadDashboard();
+          window.alert("充值成功，余额已更新。");
+          setIsRechargeOpen(false);
+        }}
       />
 
       {isAuthOpen && (

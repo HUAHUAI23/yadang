@@ -1,7 +1,7 @@
 import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
+import { fenToYuan } from "@/lib/money";
 import { jsonError, jsonOk } from "@/lib/server/response";
 import { getEffectiveSearchPrice } from "@/lib/server/trademark-search/pricing";
-import { bigIntToNumber } from "@/lib/server/trademark-search/utils";
 
 export async function GET() {
   try {
@@ -10,8 +10,8 @@ export async function GET() {
 
     return jsonOk({
       code: price.code,
-      amount: bigIntToNumber(price.amount),
-      balance: bigIntToNumber(session.account.balance),
+      amount: fenToYuan(price.amount),
+      balance: fenToYuan(session.account.balance),
     });
   } catch (error) {
     if (error instanceof AuthSessionError) {

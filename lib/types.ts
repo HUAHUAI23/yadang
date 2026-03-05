@@ -24,7 +24,7 @@ export interface SearchHistoryItem {
   id: string;
   timestamp: number;
   queryImageUrl: string;
-  cost: number;
+  cost: number; // 元
   status: "SUCCESS" | "FAILED";
   resultCount: number;
   results: TrademarkResultItem[];
@@ -32,8 +32,8 @@ export interface SearchHistoryItem {
 
 export interface SearchResponse {
   searchId: string;
-  cost: number;
-  balance: number;
+  cost: number; // 元
+  balance: number; // 元
   queryImageUrl: string;
   resultCount: number;
   results: TrademarkResultItem[];
@@ -41,13 +41,13 @@ export interface SearchResponse {
 
 export interface SearchPrice {
   code: string;
-  amount: number;
-  balance: number;
+  amount: number; // 元
+  balance: number; // 元
 }
 
 export interface AccountState {
   id: number;
-  balance: number;
+  balance: number; // 元
 }
 
 export interface RechargePackage {
@@ -63,6 +63,19 @@ export interface RechargeResult {
   credits: number;
   balance: number;
 }
+
+export type {
+  AlipayCloseOrderResult,
+  AlipayCreateOrderResult,
+  AlipayQueryOrderResult,
+  ChargeOrderItem,
+  ChargeOrderStatusView,
+  ChargeOrderView,
+  PaymentConfigResult,
+  PaymentConfigView,
+  TransactionItem,
+  TransactionView,
+} from "./types/payment";
 
 export type ApiResponse<T> = {
   code: number;

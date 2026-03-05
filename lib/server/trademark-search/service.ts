@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { businessPrisma } from "@/lib/db/business";
 import { env } from "@/lib/env";
+import { fenToYuan } from "@/lib/money";
 import { applyAccountChange } from "@/lib/server/trademark-search/account-ledger";
 import { searchMilvusByVector } from "@/lib/server/trademark-search/milvus";
 import { signResultImageUrl, uploadSearchImage } from "@/lib/server/trademark-search/oss";
@@ -17,7 +18,6 @@ import type {
   VectorizeResult,
 } from "@/lib/server/trademark-search/types";
 import {
-  bigIntToNumber,
   buildUploadObjectKey,
   decodeBase64Image,
   sha256OfBuffer,
@@ -276,8 +276,8 @@ export class TrademarkSearchService {
 
       return {
         searchId: persisted.recordId.toString(),
-        cost: bigIntToNumber(persisted.cost),
-        balance: bigIntToNumber(persisted.balanceAfter),
+        cost: fenToYuan(persisted.cost),
+        balance: fenToYuan(persisted.balanceAfter),
         queryImageUrl: persisted.queryImageUrl,
         resultCount: persisted.resultCount,
         results: resolvedPayload.results,
@@ -329,7 +329,7 @@ export class TrademarkSearchService {
         id: record.id.toString(),
         timestamp: record.createdAt.getTime(),
         queryImageUrl,
-        cost: bigIntToNumber(record.searchPriceAmount),
+        cost: fenToYuan(record.searchPriceAmount),
         status: record.status,
         resultCount: record.resultCount,
         results: hydrateResultImages(parseResultsFromJson(record.responseItems)),

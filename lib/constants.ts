@@ -1,13 +1,4 @@
-import type { RechargePackage } from "./types";
-
 export const DB_SYNC_TIME = "2026-01-30 12:30";
-
-export const RECHARGE_PACKAGES: RechargePackage[] = [
-  { id: "1", amount: 50, credits: 500 },
-  { id: "2", amount: 100, credits: 1000 },
-  { id: "3", amount: 500, credits: 5500, isPopular: true },
-  { id: "4", amount: 900, credits: 10000 },
-];
 
 export const LANDING_CAROUSEL = [
   {

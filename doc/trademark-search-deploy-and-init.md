@@ -8,7 +8,7 @@
 
 1. `lib/env.ts` 中新增配置项整体可用，未发现阻断性错误。
 2. `.env.example` 已补齐本次功能所需示例，凭证命名已统一（短信使用 `ALIYUN_SMS_ACCESS_KEY_ID` / `ALIYUN_SMS_ACCESS_KEY_SECRET`，OSS 使用 `OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET`）。
-3. 已新增初始化脚本用于“全局商标检索价格”配置，避免仅依赖 migration seed。
+3. 已新增初始化脚本用于“全局商标检索价格 + 支付配置”初始化，避免仅依赖 migration seed。
 
 ## 2. 本次新增功能涉及的环境变量
 
@@ -25,6 +25,10 @@
 9. `ALIYUN_OSS_BUCKET`
 10. `OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET`
 11. `MILVUS_ADDRESS`
+12. `ALIPAY_APP_ID`
+13. `ALIPAY_PRIVATE_KEY`
+14. `ALIPAY_PUBLIC_KEY`
+15. `ALIPAY_NOTIFY_URL`
 
 建议配置（线上推荐）：
 
@@ -38,6 +42,12 @@
 8. `VECTOR_DIMENSION`（需与 Milvus 向量维度一致）
 9. `INITIAL_ACCOUNT_BALANCE`
 10. `TRADEMARK_SEARCH_GLOBAL_PRICE`（用于初始化脚本）
+11. `PAYMENT_SCHEDULER_ENABLED`
+12. `PAYMENT_ORDER_TIMEOUT_MINUTES`
+13. `PAYMENT_ORDER_SYNC_CRON`
+14. `PAYMENT_ORDER_CLOSE_CRON`
+15. `PAYMENT_ORDER_SYNC_BATCH_SIZE`
+16. `PAYMENT_ORDER_CLOSE_BATCH_SIZE`
 
 备注：
 
@@ -96,7 +106,32 @@ pnpm system:config:init
 
 作用：
 
-1. 依次执行认证方式初始化与商标检索配置初始化。
+1. 依次执行认证方式初始化、商标检索配置初始化、支付配置初始化。
+
+### 3.4 支付配置初始化（本次新增）
+
+脚本：
+
+1. `scripts/init-payment-config.ts`
+
+命令：
+
+```bash
+pnpm payment:config:init
+```
+
+可选强制覆盖默认配置：
+
+```bash
+pnpm payment:config:init -- --force-overwrite
+```
+
+作用：
+
+1. 初始化/更新 `PaymentConfig(provider=alipay)`。
+2. 同步最小/最大金额、预设金额、订单超时配置。
+3. 根据 `ALIPAY_APP_ID/ALIPAY_PRIVATE_KEY/ALIPAY_PUBLIC_KEY` 自动启用或禁用支付配置。
+4. 默认只做必要更新（状态与公开配置），加 `--force-overwrite` 才全量覆盖展示和金额配置。
 
 ## 4. 部署与联调顺序
 
@@ -120,7 +155,13 @@ pnpm system:config:init
    4. 校验余额变化与 `trsanction` 流水
    5. 查询历史 `GET /api/search/history`
    6. 清空历史 `POST /api/history/clear`
-   7. 充值 `POST /api/recharge`
+   7. 获取支付配置 `GET /api/payment/config`
+   8. 创建订单 `POST /api/alipay/create-order`
+   9. 支付后查单 `GET /api/alipay/query-order`
+   10. 验证 notify 回调 `POST /api/alipay/notify`
+   11. 验证订单和账单查询：
+      - `GET /api/recharge/orders`
+      - `GET /api/transactions?kind=expense`
 
 ## 5. 关键代码位置
 
@@ -131,3 +172,6 @@ pnpm system:config:init
 5. 账户流水：`lib/server/trademark-search/account-ledger.ts`
 6. 初始化脚本（认证）：`scripts/init-auth-method-config.ts`
 7. 初始化脚本（检索配置）：`scripts/init-trademark-search-config.ts`
+8. 初始化脚本（支付配置）：`scripts/init-payment-config.ts`
+9. 支付服务：`lib/server/payment/alipay.ts` / `lib/server/payment/charge-orders.ts` / `lib/server/payment/scheduler.ts`
+10. 支付 API：`app/api/alipay/*` / `app/api/payment/config` / `app/api/recharge/orders` / `app/api/transactions`
