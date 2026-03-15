@@ -43,7 +43,7 @@
 | `services/` | 子服务 | FastAPI 向量服务（独立部署） |
 | `stores/` | 前端状态管理 | Zustand 全局状态 |
 | `tmp/` | 临时目录 | 本地临时文件 |
-| `types/` | TS 声明补充 | 第三方类型补充（如 `qrcode`） |
+| `types/` | TS 声明补充 | 第三方类型补充 |
 | `node_modules/` | 依赖安装目录 | 非源码 |
 
 ### 2.1 `app/` 细分
@@ -95,7 +95,7 @@
 4. 鉴权：`jose` + HttpOnly Cookie。
 5. 状态管理：`zustand`。
 6. 表单与校验：`react-hook-form` + `zod`。
-7. 支付：`alipay-sdk` + `qrcode` + `croner`。
+7. 支付：`alipay-sdk` + `croner`。
 8. 观测：`pino` + `AsyncLocalStorage`（traceId 链路透传）。
 
 ## 3.2 关键设计模式（工程化）
@@ -135,7 +135,7 @@
 
 1. UI 体系：Radix + shadcn 组件集。
 2. 服务端能力：Prisma、Aliyun SDK、Milvus SDK、OSS。
-3. 支付能力：`alipay-sdk`、`qrcode`、`croner`。
+3. 支付能力：`alipay-sdk`、`croner`。
 4. 数据校验/状态：`zod`、`zustand`。
 
 ---
@@ -209,26 +209,24 @@
 
 ## 7.2 支付 API 清单
 
-1. `POST /api/alipay/create-order`
-   - 创建支付宝充值订单，返回二维码与过期时间。
-2. `POST /api/recharge`
-   - 统一充值下单入口（当前默认 provider=alipay，后续可扩展微信/Stripe）。
-3. `GET /api/alipay/query-order?outTradeNo=...|chargeOrderId=...`
+1. `POST /api/recharge`
+   - 创建支付宝充值订单，返回收银台跳转信息与过期时间。
+2. `GET /api/alipay/query-order?outTradeNo=...|chargeOrderId=...`
    - 查询订单状态，必要时触发补偿入账。
-4. `POST /api/alipay/close-order`
+3. `POST /api/alipay/close-order`
    - 主动关闭订单（取消支付/超时关单）。
-5. `POST /api/alipay/notify`
+4. `POST /api/alipay/notify`
    - 支付宝回调，验签后处理到账。
-6. `GET /api/payment/config`
+5. `GET /api/payment/config`
    - 获取支付配置可用性与公开配置。
-7. `GET /api/recharge/orders`
+6. `GET /api/recharge/orders`
    - 查询用户充值订单。
-8. `GET /api/transactions?kind=all|recharge|expense`
+7. `GET /api/transactions?kind=all|recharge|expense`
    - 查询交易记录（含消费记录）。
 
 支付平台文档参考：
 
-1. 支付宝开放平台（当面付/交易接口）：<https://opendocs.alipay.com/open/270>
+1. 支付宝开放平台（电脑网站支付/交易接口）：<https://opendocs.alipay.com/open/270>
 
 ---
 
@@ -279,7 +277,7 @@ Cron 表达式由环境变量控制：
 1. Tab1「发起充值」
    - 读取支付配置
    - 选择预设金额或自定义金额
-   - 创建订单并展示支付宝二维码
+   - 创建订单并打开支付宝收银台
    - 订单状态轮询与倒计时
    - 支持主动取消订单
 2. Tab2「订单与账单」
@@ -288,7 +286,7 @@ Cron 表达式由环境变量控制：
 
 交互目标：
 
-1. 用户尽量不离开当前页面即可完成支付。
+1. 用户可在新标签页完成付款，原页面负责同步订单结果。
 2. 支付成功后自动刷新余额与账单。
 
 ---

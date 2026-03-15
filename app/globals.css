@@ -131,47 +131,6 @@
   }
 }
 
-.nebula-1 {
-  position: fixed;
-  top: -10%;
-  left: -10%;
-  width: 50%;
-  height: 50%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
-  z-index: -1;
-  filter: blur(70px);
-  animation: nebula-move 20s infinite alternate;
-  pointer-events: none;
-}
-
-.nebula-2 {
-  position: fixed;
-  bottom: -12%;
-  right: -10%;
-  width: 45%;
-  height: 45%;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
-  z-index: -1;
-  filter: blur(70px);
-  animation: nebula-move 24s infinite alternate-reverse;
-  pointer-events: none;
-}
-
-@keyframes nebula-move {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(5%, 5%);
-  }
-}
-
-.glass-effect {
-  background: var(--glass-bg);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
-}
-
 .pro-card-shadow {
   box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.08);
 }
@@ -196,7 +155,6 @@
   left: 0;
   right: 0;
   z-index: 10;
-  box-shadow: 0 0 15px rgba(37, 99, 235, 0.6);
   animation: scan 2.6s ease-in-out infinite;
 }
 

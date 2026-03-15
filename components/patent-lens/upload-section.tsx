@@ -58,38 +58,38 @@ export default function UploadSection({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto py-12 px-6 lg:py-20">
-      <div className="max-w-4xl mb-16">
-        <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 mb-6">
-          <span className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
+    <div className="mx-auto w-full max-w-7xl px-6 py-12 lg:py-20">
+      <div className="mb-16 max-w-4xl">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2">
+          <span className="h-2 w-2 rounded-full bg-blue-600" />
           <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
             数据库更新时间: {DB_SYNC_TIME}
           </span>
         </div>
-        <h1 className="text-5xl lg:text-7xl font-[900] text-slate-900 tracking-tight leading-[1.1] mb-8">
+        <h1 className="mb-8 text-5xl font-[900] leading-[1.1] tracking-tight text-slate-900 lg:text-7xl">
           下一代{" "}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+          <span className="bg-linear-to-r from-blue-600 via-indigo-600 to-sky-500 bg-clip-text text-transparent">
             商标图搜
           </span>
           <br />
           智能视觉引擎
         </h1>
-        <p className="text-lg lg:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl">
+        <p className="max-w-2xl text-lg font-medium leading-relaxed text-slate-500 lg:text-xl">
           上传一张图片，系统会完成向量化、Milvus 检索，并返回关联的商标/外观信息结果。
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <div
             onDragEnter={onDrag}
             onDragLeave={onDrag}
             onDragOver={onDrag}
             onDrop={onDrop}
-            className={`relative h-[500px] flex flex-col items-center justify-center rounded-[3rem] transition-all duration-700 overflow-hidden pro-card-shadow accent-glow ${
+            className={`relative h-[500px] flex flex-col items-center justify-center overflow-hidden rounded-[3rem] transition-colors duration-300 pro-card-shadow accent-glow ${
               dragActive
-                ? "bg-blue-50/50 ring-4 ring-blue-500/20"
-                : "bg-white border border-slate-200/60"
+                ? "border border-blue-300 bg-blue-50 ring-2 ring-blue-100"
+                : "border border-slate-200 bg-white"
             } cursor-pointer`}
             onClick={() => !isLoading && fileInputRef.current?.click()}
           >
@@ -107,27 +107,27 @@ export default function UploadSection({
             />
 
             {preview ? (
-              <div className="relative w-full h-full p-12 flex items-center justify-center group/preview">
-                <div className="relative w-full h-full">
+              <div className="flex h-full w-full items-center justify-center p-12">
+                <div className="relative h-full w-full">
                   <Image
                     src={preview}
                     alt="Preview"
                     fill
                     sizes="(max-width: 1024px) 90vw, 600px"
                     unoptimized
-                    className="object-contain rounded-3xl transition-all duration-1000 group-hover/preview:scale-[1.05] drop-shadow-2xl"
+                    className="rounded-3xl object-contain"
                   />
                 </div>
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/preview:opacity-100 transition-all duration-500 backdrop-blur-[4px] flex items-center justify-center">
-                  <div className="bg-white px-8 py-4 rounded-2xl text-slate-900 font-[900] text-xs uppercase tracking-widest shadow-2xl">
+                <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-xs font-[900] uppercase tracking-widest text-slate-900">
                     点击更换文件
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center px-10 text-center group">
-                <div className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400 mb-8 flex items-center justify-center border border-slate-200 group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:rotate-12 group-hover:shadow-2xl group-hover:shadow-blue-500/40 transition-all duration-700">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center px-10 text-center">
+                <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-[2.5rem] border border-slate-200 bg-slate-50 text-slate-400">
+                  <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -139,19 +139,18 @@ export default function UploadSection({
                 <h2 className="text-2xl font-[900] text-slate-900 tracking-tight">
                   拖拽文件或点击上传
                 </h2>
-                <p className="text-sm text-slate-400 mt-4 font-bold uppercase tracking-wide">
+                <p className="mt-4 text-sm font-bold uppercase tracking-wide text-slate-400">
                   支持 PNG / JPG（单次动态扣费）
                 </p>
               </div>
             )}
 
             {isLoading && (
-              <div className="absolute inset-0 bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center z-30">
-                <div className="relative w-24 h-24 mb-8">
-                  <div className="absolute inset-0 border-4 border-blue-100 rounded-full" />
-                  <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin" />
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/90">
+                <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-4 border-blue-100">
+                  <div className="h-8 w-8 rounded-full border-4 border-blue-600 border-r-transparent" />
                 </div>
-                <span className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] animate-pulse">
+                <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-900">
                   正在执行商标向量检索...
                 </span>
               </div>
@@ -159,10 +158,10 @@ export default function UploadSection({
           </div>
         </div>
 
-        <div className="lg:col-span-4 flex flex-col space-y-8">
-          <div className="bg-white rounded-[3rem] p-10 pro-card-shadow border border-slate-200/60 flex-grow flex flex-col justify-between">
+        <div className="flex flex-col space-y-8 lg:col-span-4">
+          <div className="flex flex-grow flex-col justify-between rounded-[3rem] border border-slate-200 bg-white p-10 pro-card-shadow">
             <div>
-              <div className="flex items-center justify-between mb-10">
+              <div className="mb-10 flex items-center justify-between">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">
                   检索配置
                 </h3>
@@ -171,9 +170,9 @@ export default function UploadSection({
                 </span>
               </div>
 
-              <div className="p-5 rounded-[2rem] border-2 border-indigo-100 bg-indigo-50/30">
-                <div className="flex items-center space-x-5">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black bg-indigo-600 text-white">
+              <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-5">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 font-black text-white">
                     商
                   </div>
                   <div>
@@ -189,14 +188,13 @@ export default function UploadSection({
             </div>
 
             <div className="mt-12">
-              <div className="flex justify-between items-end mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+              <div className="mb-8 flex items-end justify-between rounded-[2rem] border border-slate-100 bg-slate-50 p-6">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                     预计消耗
                   </p>
                   <p className="text-4xl font-[900] text-slate-900">
-                    ¥
-                    {cost.toFixed(2)}
+                    ¥{cost.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -204,13 +202,13 @@ export default function UploadSection({
               <Button
                 onClick={() => preview && onSearch(preview)}
                 disabled={!canSearch || isLoading}
-                className={`w-full h-auto py-6 rounded-[2rem] font-[900] text-white transition-all shadow-2xl active:scale-95 flex items-center justify-center space-x-3 text-lg tracking-widest uppercase ${
+                className={`h-auto w-full rounded-[2rem] py-6 text-lg font-[900] uppercase tracking-widest text-white shadow-none ${
                   canSearch && !isLoading
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1"
+                    ? "bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                     : "bg-slate-200 cursor-not-allowed text-slate-400"
                 }`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -222,7 +220,7 @@ export default function UploadSection({
               </Button>
 
               {currentBalance < cost && !isLoading && (
-                <p className="text-center mt-6 text-[10px] font-black text-rose-500 uppercase tracking-widest">
+                <p className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-rose-500">
                   余额不足，请先充值
                 </p>
               )}

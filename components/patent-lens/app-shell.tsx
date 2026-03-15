@@ -26,6 +26,7 @@ export default function AppShell() {
 
   const {
     isAuthenticated,
+    user,
     account,
     setSession,
     setBalance,
@@ -171,12 +172,10 @@ export default function AppShell() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fcfdfe]">
-      <div className="nebula-1" />
-      <div className="nebula-2" />
-
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <Header
         account={account}
+        user={user}
         onOpenRecharge={() =>
           isAuthenticated ? setIsRechargeOpen(true) : setIsAuthOpen(true)
         }
@@ -188,7 +187,7 @@ export default function AppShell() {
       {!isAuthenticated ? (
         <Landing onStart={() => setIsAuthOpen(true)} />
       ) : (
-        <div className="flex-grow flex flex-col lg:flex-row animate-in fade-in duration-700">
+        <div className="flex flex-grow flex-col lg:flex-row">
           <HistorySidebar
             history={history}
             onSelectItem={handleSelectHistoryItem}

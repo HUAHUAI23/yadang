@@ -156,7 +156,7 @@ pnpm system:config:init
    5. 查询历史 `GET /api/search/history`
    6. 清空历史 `POST /api/history/clear`
    7. 获取支付配置 `GET /api/payment/config`
-   8. 创建订单 `POST /api/alipay/create-order`
+   8. 创建订单 `POST /api/recharge`
    9. 支付后查单 `GET /api/alipay/query-order`
    10. 验证 notify 回调 `POST /api/alipay/notify`
    11. 验证订单和账单查询：

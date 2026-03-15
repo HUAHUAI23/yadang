@@ -25,8 +25,8 @@ export default function HistorySidebar({
   };
 
   return (
-    <aside className="w-full lg:w-96 bg-white/40 border-r border-slate-200/60 flex flex-col h-[calc(100vh-80px)] sticky top-20 overflow-hidden">
-      <div className="p-8 flex justify-between items-end">
+    <aside className="sticky top-20 flex h-[calc(100vh-80px)] w-full flex-col overflow-hidden border-r border-slate-200 bg-white lg:w-96">
+      <div className="flex items-end justify-between p-8">
         <div>
           <h2 className="text-sm font-[900] text-slate-900 tracking-widest uppercase">
             历史记录
@@ -38,7 +38,7 @@ export default function HistorySidebar({
         {history.length > 0 && (
           <button
             onClick={onClearHistory}
-            className="text-[10px] font-black text-slate-400 hover:text-rose-500 transition-all uppercase tracking-[0.2em] px-3 py-1 bg-white rounded-lg border border-slate-100 shadow-sm"
+            className="rounded-lg border border-slate-100 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 transition-colors hover:text-rose-500"
           >
             清空
           </button>
@@ -48,10 +48,10 @@ export default function HistorySidebar({
       <ScrollArea className="flex-grow px-6 pb-10">
         <div className="space-y-4 pr-4">
           {history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center px-8 border-2 border-dashed border-slate-100 rounded-[2.5rem]">
-              <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center text-slate-200 mb-6">
+            <div className="flex h-64 flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-100 px-8 text-center">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-slate-50 text-slate-200">
                 <svg
-                  className="w-8 h-8"
+                  className="h-8 w-8"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -73,7 +73,7 @@ export default function HistorySidebar({
               <div
                 key={item.id}
                 onClick={() => onSelectItem(item)}
-                className="group flex items-center p-4 rounded-[2rem] bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer transition-all duration-500 active:scale-[0.96] overflow-hidden relative"
+                className="relative flex cursor-pointer items-center overflow-hidden rounded-[2rem] border border-slate-100 bg-white p-4 transition-colors hover:border-blue-200"
               >
                 <div
                   className={`absolute left-0 top-0 bottom-0 w-1.5 ${
@@ -81,22 +81,22 @@ export default function HistorySidebar({
                   }`}
                 />
 
-                <div className="relative w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden flex-shrink-0 border border-slate-50 transition-all duration-700 group-hover:scale-95 group-hover:rotate-2">
+                <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-50 bg-slate-50">
                   <Image
                     src={item.queryImageUrl}
                     alt="History"
                     fill
                     sizes="64px"
                     unoptimized
-                    className="object-cover group-hover:scale-125 transition-transform duration-1000"
+                    className="object-cover"
                   />
                 </div>
                 <div className="ml-5 flex-grow overflow-hidden">
-                  <div className="flex justify-between items-center mb-1.5">
+                  <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-400 tracking-wider">
                       {formatTime(item.timestamp)}
                     </span>
-                    <div className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 shadow-sm">
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-600">
                       -¥{item.cost.toFixed(2)}
                     </div>
                   </div>
@@ -121,11 +121,11 @@ export default function HistorySidebar({
         </div>
       </ScrollArea>
 
-      <div className="p-8 bg-white/60 border-t border-slate-200/50 backdrop-blur-md">
-        <div className="flex items-center space-x-3 text-slate-400">
-          <div className="p-1.5 bg-emerald-50 text-emerald-500 rounded-lg">
+      <div className="border-t border-slate-200 p-8">
+        <div className="flex items-center gap-3 text-slate-400">
+          <div className="rounded-lg bg-emerald-50 p-1.5 text-emerald-500">
             <svg
-              className="w-3.5 h-3.5"
+              className="h-3.5 w-3.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

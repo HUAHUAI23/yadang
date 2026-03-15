@@ -216,7 +216,7 @@ export default function AuthDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden p-0">
+      <DialogContent className="w-full max-w-md overflow-hidden rounded-[2.5rem] bg-white p-0 shadow-none">
         <div className="p-10">
           <DialogHeader className="mb-8">
             <DialogTitle className="text-3xl font-[900] text-slate-900 tracking-tight">
@@ -400,7 +400,7 @@ export default function AuthDialog({
                     type="button"
                     disabled={countdown > 0}
                     onClick={handleSendSms}
-                    className="px-6 mt-7 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                    className="mt-7 rounded-2xl border border-blue-100 bg-blue-50 px-6 text-[10px] font-black uppercase tracking-widest text-blue-600 transition-colors hover:bg-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
                   >
                     {countdown > 0 ? `${countdown}s` : "获取验证码"}
                   </Button>
@@ -457,7 +457,7 @@ export default function AuthDialog({
               <Button
                 type="submit"
                 disabled={!allowPassword && !allowSms}
-                className="w-full h-auto bg-slate-900 hover:bg-black text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-slate-200 active:scale-95"
+                className="h-auto w-full rounded-2xl bg-slate-900 py-5 text-sm font-black uppercase tracking-widest text-white transition-colors hover:bg-black"
               >
                 {effectiveMode === "register"
                   ? "立即注册并加入"

@@ -30,8 +30,33 @@ type AlipaySdkResult = {
   [key: string]: unknown;
 };
 
+export class AlipayGatewayError extends Error {
+  code: string;
+  subCode: string;
+
+  constructor(message: string, input: { code?: string; subCode?: string }) {
+    super(message);
+    this.name = "AlipayGatewayError";
+    this.code = input.code ?? "";
+    this.subCode = input.subCode ?? "";
+  }
+}
+
 const globalForAlipay = globalThis as unknown as {
   alipayClient?: AlipaySdk;
+};
+
+const withAppAuthToken = <T extends Record<string, unknown>>(
+  payload: T,
+): T & { appAuthToken?: string } => {
+  const appAuthToken = env.alipayAppAuthToken;
+  if (!appAuthToken) {
+    return payload;
+  }
+  return {
+    ...payload,
+    appAuthToken,
+  };
 };
 
 const getConfiguredKeys = (): AlipayConfig | null => {
@@ -101,7 +126,10 @@ const normalizeResult = (result: AlipaySdkResult, action: string) => {
     const suffix = [code ? `code=${code}` : "", subCode ? `subCode=${subCode}` : ""]
       .filter(Boolean)
       .join(", ");
-    throw new Error(suffix ? `${message} (${suffix})` : message);
+    throw new AlipayGatewayError(suffix ? `${message} (${suffix})` : message, {
+      code,
+      subCode,
+    });
   }
 
   return result;
@@ -132,18 +160,20 @@ export type AlipayOrderStatus = {
   body: string;
 };
 
-export async function precreateAlipayOrder(input: {
+export function createAlipayPagePayment(input: {
   outTradeNo: string;
   subject: string;
   totalAmountFen: bigint;
   body?: string;
   timeoutMinutes: number;
+  returnUrl?: string;
 }) {
-  const notifyUrl = env.alipayNotifyUrl;
   const sdk = getAlipayClient();
+  const notifyUrl = env.alipayNotifyUrl;
+  const returnUrl = input.returnUrl ?? env.alipayReturnUrl;
   gatewayLogger.info(
     {
-      action: "precreate",
+      action: "page-pay",
       outTradeNo: input.outTradeNo,
       timeoutMinutes: input.timeoutMinutes,
     },
@@ -151,58 +181,40 @@ export async function precreateAlipayOrder(input: {
   );
 
   try {
-    const requestPayload: {
-      notifyUrl?: string;
-      bizContent: {
-        out_trade_no: string;
-        total_amount: string;
-        subject: string;
-        body?: string;
-        product_code: string;
-        timeout_express: string;
-      };
-    } = {
+    const requestPayload = withAppAuthToken({
+      ...(notifyUrl ? { notifyUrl } : {}),
+      ...(returnUrl ? { returnUrl } : {}),
       bizContent: {
         out_trade_no: input.outTradeNo,
         total_amount: String(fenToYuan(input.totalAmountFen)),
         subject: input.subject,
         body: input.body,
-        product_code: "FACE_TO_FACE_PAYMENT",
+        product_code: "FAST_INSTANT_TRADE_PAY",
         timeout_express: `${input.timeoutMinutes}m`,
+        integration_type: "PCWEB",
       },
-    };
-    if (notifyUrl) {
-      requestPayload.notifyUrl = notifyUrl;
+    });
+
+    const paymentUrl = sdk.pageExecute("alipay.trade.page.pay", "GET", requestPayload);
+    if (!paymentUrl) {
+      throw new Error("支付宝返回的收银台地址为空");
     }
-
-    const result = (await sdk.exec("alipay.trade.precreate", {
-      ...requestPayload,
-    })) as AlipaySdkResult;
-
-    const normalized = normalizeResult(result, "下单");
-    const qrCode = readString(normalized, "qrCode", "qr_code");
-    if (!qrCode) {
-      throw new Error("支付宝返回的二维码为空");
-    }
-
-    const outTradeNo =
-      readString(normalized, "outTradeNo", "out_trade_no") || input.outTradeNo;
     gatewayLogger.info(
       {
-        action: "precreate",
-        outTradeNo,
+        action: "page-pay",
+        outTradeNo: input.outTradeNo,
       },
       "payment.alipay.response",
     );
 
     return {
-      outTradeNo,
-      qrCode,
+      outTradeNo: input.outTradeNo,
+      paymentUrl,
     };
   } catch (error) {
     gatewayLogger.error(
       {
-        action: "precreate",
+        action: "page-pay",
         outTradeNo: input.outTradeNo,
         error: serializeError(error),
       },
@@ -223,11 +235,14 @@ export async function queryAlipayOrderByOutTradeNo(outTradeNo: string) {
   );
 
   try {
-    const result = (await sdk.exec("alipay.trade.query", {
-      bizContent: {
-        out_trade_no: outTradeNo,
-      },
-    })) as AlipaySdkResult;
+    const result = (await sdk.exec(
+      "alipay.trade.query",
+      withAppAuthToken({
+        bizContent: {
+          out_trade_no: outTradeNo,
+        },
+      }),
+    )) as AlipaySdkResult;
 
     const normalized = normalizeResult(result, "查询订单");
 
@@ -268,6 +283,37 @@ export async function queryAlipayOrderByOutTradeNo(outTradeNo: string) {
   }
 }
 
+export async function probeAlipayOrderQuery(outTradeNo: string) {
+  const sdk = getAlipayClient();
+
+  try {
+    const result = (await sdk.exec(
+      "alipay.trade.query",
+      withAppAuthToken({
+        bizContent: {
+          out_trade_no: outTradeNo,
+        },
+      }),
+    )) as AlipaySdkResult;
+
+    normalizeResult(result, "查询订单");
+  } catch (error) {
+    if (isAlipayTradeNotExistError(error)) {
+      return;
+    }
+
+    gatewayLogger.error(
+      {
+        action: "query-probe",
+        outTradeNo,
+        error: serializeError(error),
+      },
+      "payment.alipay.exception",
+    );
+    throw error;
+  }
+}
+
 export async function closeAlipayOrder(outTradeNo: string) {
   const sdk = getAlipayClient();
   gatewayLogger.info(
@@ -279,11 +325,14 @@ export async function closeAlipayOrder(outTradeNo: string) {
   );
 
   try {
-    const result = (await sdk.exec("alipay.trade.close", {
-      bizContent: {
-        out_trade_no: outTradeNo,
-      },
-    })) as AlipaySdkResult;
+    const result = (await sdk.exec(
+      "alipay.trade.close",
+      withAppAuthToken({
+        bizContent: {
+          out_trade_no: outTradeNo,
+        },
+      }),
+    )) as AlipaySdkResult;
 
     const normalized = normalizeResult(result, "关闭订单");
     const response = {
@@ -302,6 +351,56 @@ export async function closeAlipayOrder(outTradeNo: string) {
     gatewayLogger.error(
       {
         action: "close",
+        outTradeNo,
+        error: serializeError(error),
+      },
+      "payment.alipay.exception",
+    );
+    throw error;
+  }
+}
+
+export async function cancelAlipayOrder(outTradeNo: string) {
+  const sdk = getAlipayClient();
+  gatewayLogger.info(
+    {
+      action: "cancel",
+      outTradeNo,
+    },
+    "payment.alipay.request",
+  );
+
+  try {
+    const result = (await sdk.exec(
+      "alipay.trade.cancel",
+      withAppAuthToken({
+        bizContent: {
+          out_trade_no: outTradeNo,
+        },
+      }),
+    )) as AlipaySdkResult;
+
+    const normalized = normalizeResult(result, "撤销订单");
+    const response = {
+      tradeNo: readString(normalized, "tradeNo", "trade_no"),
+      outTradeNo: readString(normalized, "outTradeNo", "out_trade_no") || outTradeNo,
+      retryFlag: readString(normalized, "retryFlag", "retry_flag"),
+      action: readString(normalized, "action"),
+    };
+    gatewayLogger.info(
+      {
+        action: "cancel",
+        outTradeNo: response.outTradeNo,
+        retryFlag: response.retryFlag,
+        tradeAction: response.action,
+      },
+      "payment.alipay.response",
+    );
+    return response;
+  } catch (error) {
+    gatewayLogger.error(
+      {
+        action: "cancel",
         outTradeNo,
         error: serializeError(error),
       },
@@ -347,4 +446,31 @@ export function isIgnorableAlipayCloseError(message: string) {
     normalized.includes("TRADE_HAS_CLOSE") ||
     normalized.includes("REASON_TRADE_BEEN_FREEZEN")
   );
+}
+
+export function isIgnorableAlipayCancelError(message: string) {
+  const normalized = message.toUpperCase();
+  return (
+    isIgnorableAlipayCloseError(message) ||
+    normalized.includes("ACQ.TRADE_STATUS_ERROR") ||
+    normalized.includes("TRADE_STATUS_ERROR")
+  );
+}
+
+export function isAlipayTradeNotExistError(error: unknown) {
+  if (error instanceof AlipayGatewayError) {
+    return error.subCode === "ACQ.TRADE_NOT_EXIST";
+  }
+
+  const message = error instanceof Error ? error.message.toUpperCase() : String(error).toUpperCase();
+  return message.includes("ACQ.TRADE_NOT_EXIST");
+}
+
+export function isAlipayTradeAlreadyClosedError(error: unknown) {
+  if (error instanceof AlipayGatewayError) {
+    return error.subCode === "ACQ.TRADE_HAS_CLOSE";
+  }
+
+  const message = error instanceof Error ? error.message.toUpperCase() : String(error).toUpperCase();
+  return message.includes("ACQ.TRADE_HAS_CLOSE") || message.includes("TRADE_HAS_CLOSE");
 }

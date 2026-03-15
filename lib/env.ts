@@ -303,6 +303,18 @@ class EnvConfig {
     return this.optionalString("ALIPAY_NOTIFY_URL");
   }
 
+  get alipayReturnUrl() {
+    return this.optionalString("ALIPAY_RETURN_URL");
+  }
+
+  get alipayAppAuthToken() {
+    return this.optionalString("ALIPAY_APP_AUTH_TOKEN");
+  }
+
+  get alipaySysServiceProviderId() {
+    return this.optionalString("ALIPAY_SYS_SERVICE_PROVIDER_ID");
+  }
+
   get alipayGateway() {
     return this.optional("ALIPAY_GATEWAY", "https://openapi.alipay.com/gateway.do");
   }

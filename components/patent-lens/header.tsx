@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
-import type { AccountState } from "@/lib/types";
+import type { AccountState, AuthUser } from "@/lib/types";
 
 interface HeaderProps {
   account: AccountState | null;
+  user: AuthUser | null;
   onOpenRecharge: () => void;
   isAuthenticated: boolean;
   onLogout: () => void;
@@ -13,24 +16,30 @@ interface HeaderProps {
 
 export default function Header({
   account,
+  user,
   onOpenRecharge,
   isAuthenticated,
   onLogout,
   onLogin,
 }: HeaderProps) {
   const balance = account?.balance ?? 0;
+  const userLabel = user?.phone?.trim() || user?.username?.trim() || "已登录";
+  const userBadge = (user?.phone?.trim() || user?.username?.trim() || "ME")
+    .slice(-2)
+    .toUpperCase();
+  const balanceText = balance.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   return (
-    <header className="sticky top-0 z-50 glass-effect border-b border-slate-200/50 shadow-sm">
-      <div className="max-w-[1600px] mx-auto px-6 sm:px-10">
-        <div className="flex justify-between items-center h-20">
-          <div
-            className="flex items-center space-x-3 group cursor-pointer"
-            onClick={() => (window.location.href = "/")}
-          >
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20 group-hover:rotate-6 transition-transform">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95">
+      <div className="mx-auto max-w-screen-2xl px-6 sm:px-10">
+        <div className="flex h-20 items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="rounded-2xl bg-slate-900 p-2.5 text-white">
               <svg
-                className="w-6 h-6 text-white"
+                className="size-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -43,36 +52,32 @@ export default function Header({
                 />
               </svg>
             </div>
-            <span className="text-xl font-[900] bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tighter uppercase">
+            <span className="text-xl font-[900] uppercase tracking-tight text-slate-950">
               PatentLens
             </span>
-          </div>
+          </Link>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center gap-4">
             {isAuthenticated && (
-              <div className="hidden lg:flex items-center space-x-5">
+              <div className="hidden items-center gap-5 lg:flex">
                 <div className="flex flex-col items-end border-r border-slate-200 pr-5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     账户余额
                   </span>
-                  <div className="flex items-center space-x-1.5 mt-0.5">
+                  <div className="mt-1 flex items-center gap-1.5">
                     <span
                       className={`text-lg font-[900] ${
                         balance < 5 ? "text-rose-500" : "text-slate-900"
                       }`}
                     >
-                      ¥
-                      {balance.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      ¥{balanceText}
                     </span>
                   </div>
                 </div>
 
                 <Button
                   onClick={onOpenRecharge}
-                  className="h-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95"
+                  className="h-10 rounded-xl bg-slate-900 px-5 text-xs font-black uppercase tracking-[0.2em] text-white hover:bg-slate-800"
                 >
                   充值
                 </Button>
@@ -80,28 +85,48 @@ export default function Header({
             )}
 
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <div className="group relative">
-                  <div className="w-10 h-10 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-slate-900 font-black text-xs shadow-sm cursor-pointer hover:border-blue-200 transition-all">
-                    ID
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 lg:hidden">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                      余额
+                    </p>
+                    <p className={`text-sm font-[900] ${balance < 5 ? "text-rose-500" : "text-slate-900"}`}>
+                      ¥{balanceText}
+                    </p>
                   </div>
-                  <div className="absolute right-0 top-full pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300">
-                    <div className="bg-white border border-slate-100 p-2 rounded-2xl shadow-2xl min-w-[160px]">
-                      <button
-                        onClick={onLogout}
-                        className="w-full text-left px-4 py-2 text-[10px] font-black text-rose-500 hover:bg-rose-50 rounded-xl transition-colors uppercase tracking-widest"
-                      >
-                        退出登录
-                      </button>
-                    </div>
+                  <Button
+                    onClick={onOpenRecharge}
+                    className="h-10 rounded-xl bg-slate-900 px-4 text-[11px] font-black uppercase tracking-[0.18em] text-white hover:bg-slate-800"
+                  >
+                    充值
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                  <div className="max-w-24 text-right sm:max-w-36">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                      用户手机号
+                    </p>
+                    <p className="truncate text-sm font-black text-slate-900">{userLabel}</p>
+                  </div>
+                  <div className="flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-xs font-black text-slate-900">
+                    {userBadge}
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  onClick={onLogout}
+                  className="h-10 rounded-xl border-slate-200 px-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                >
+                  退出
+                </Button>
               </div>
             ) : (
               <Button
                 variant="outline"
                 onClick={onLogin}
-                className="h-auto text-[11px] font-black text-slate-900 bg-white border border-slate-200 hover:border-slate-300 px-6 py-2.5 rounded-xl transition-all shadow-sm tracking-widest uppercase active:scale-95"
+                className="h-10 rounded-xl border-slate-200 bg-white px-5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 hover:border-slate-300 hover:bg-slate-50"
               >
                 登录
               </Button>

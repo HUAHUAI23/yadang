@@ -73,16 +73,9 @@ export const api = {
       method: "GET",
     }),
   rechargeCreateOrder: (
-    payload: { amount: number; provider?: "alipay" | "wechat" | "stripe" }
-  ): Promise<ApiResponse<AlipayCreateOrderResult>> =>
-    request("/api/recharge", {
-      method: "POST",
-      body: payload,
-    }),
-  alipayCreateOrder: (
     payload: { amount: number }
   ): Promise<ApiResponse<AlipayCreateOrderResult>> =>
-    request("/api/alipay/create-order", {
+    request("/api/recharge", {
       method: "POST",
       body: payload,
     }),

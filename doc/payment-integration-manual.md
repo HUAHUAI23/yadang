@@ -87,14 +87,13 @@
 
 ## 5. API 协作关系
 
-1. `POST /api/recharge`：统一充值入口（当前仅 alipay）。
-2. `POST /api/alipay/create-order`：创建订单并返回二维码。
-3. `POST /api/alipay/notify`：平台回调验签并入账（主路径）。
-4. `GET /api/alipay/query-order`：前端轮询查单并兜底同步。
-5. `POST /api/alipay/close-order`：用户取消/系统关单。
-6. `GET /api/payment/config`：支付配置可用性查询。
-7. `GET /api/recharge/orders`：充值订单列表。
-8. `GET /api/transactions`：交易记录列表。
+1. `POST /api/recharge`：创建订单并返回收银台跳转信息。
+2. `POST /api/alipay/notify`：平台回调验签并入账（主路径）。
+3. `GET /api/alipay/query-order`：前端轮询查单并兜底同步。
+4. `POST /api/alipay/close-order`：用户取消/系统关单。
+5. `GET /api/payment/config`：支付配置可用性查询。
+6. `GET /api/recharge/orders`：充值订单列表。
+7. `GET /api/transactions`：交易记录列表。
 
 ---
 
@@ -105,7 +104,7 @@
 启动入口有两处：
 
 1. `instrumentation.ts`（Next.js Node runtime 启动时自动触发）
-2. `POST /api/recharge`、`POST /api/alipay/create-order` 中的 `ensurePaymentSchedulersStarted()`（兜底）
+2. `POST /api/recharge` 中的 `ensurePaymentSchedulersStarted()`（兜底）
 
 `scheduler` 内部有全局单例状态，已启动后不会重复注册任务。
 

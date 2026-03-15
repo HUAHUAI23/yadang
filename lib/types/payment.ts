@@ -19,8 +19,7 @@ export type AlipayCreateOrderResult = {
   chargeOrderId: number;
   outTradeNo: string;
   amount: number;
-  qrCode: string;
-  qrCodeDataUrl: string;
+  paymentUrl: string;
   expireInSeconds: number;
   expireAt: string;
 };
@@ -56,7 +55,11 @@ export type AlipayQueryOrderResult = ChargeOrderStatusView & {
 export type AlipayCloseOrderResult = Pick<
   ChargeOrderStatusView,
   "chargeOrderId" | "outTradeNo" | "amount" | "status"
->;
+> & {
+  closePending?: boolean;
+  closePendingReason?: "platform_not_ready" | "close_not_confirmed";
+  message?: string;
+};
 
 export type ChargeOrderView = {
   id: number;

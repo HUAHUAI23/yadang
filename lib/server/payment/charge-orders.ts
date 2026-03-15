@@ -1,15 +1,15 @@
-import QRCode from "qrcode";
-
 import { businessPrisma } from "@/lib/db/business";
 import { env } from "@/lib/env";
-import { fenToYuan, yuanToFen, yuanToFenNumber } from "@/lib/money";
+import { fenToYuan, yuanToFen } from "@/lib/money";
 import { childLogger, getTraceId } from "@/lib/server/logger";
 import {
   type AlipayOrderStatus,
   closeAlipayOrder,
+  createAlipayPagePayment,
   isAlipayEnabled,
-  isIgnorableAlipayCloseError,
-  precreateAlipayOrder,
+  isAlipayTradeAlreadyClosedError,
+  isAlipayTradeNotExistError,
+  probeAlipayOrderQuery,
   queryAlipayOrderByOutTradeNo,
 } from "@/lib/server/payment/alipay";
 import {
@@ -91,6 +91,26 @@ type PaymentSyncOutcome = {
   status: PaymentSyncStatus;
 };
 
+type CloseChargeOrderResult =
+  | {
+      status: "success" | "closed";
+      outTradeNo: string;
+    }
+  | {
+      status: "pending";
+      outTradeNo: string;
+      retryable: true;
+      reason: "platform_not_ready" | "close_not_confirmed";
+    };
+
+type CloseChargeOrderPendingReason = "platform_not_ready" | "close_not_confirmed";
+
+type SetChargeOrderClosedResult = {
+  id: number;
+  outTradeNo: string;
+  status: "success" | "closed" | "failed";
+};
+
 export function toChargeOrderStatusView(
   order: ChargeOrderBaseRecord,
 ): ChargeOrderStatusView {
@@ -128,8 +148,6 @@ export class ChargeOrderError extends Error {
     this.status = status;
   }
 }
-
-export class NonRetryablePaymentError extends Error {}
 
 const getPaymentJobOptions = (
   value: number | PaymentJobOptions | undefined,
@@ -257,6 +275,83 @@ const releaseProcessingOrder = async (id: number) => {
   });
 };
 
+const releaseProcessingOrderByOutTradeNo = async (outTradeNo: string) => {
+  await businessPrisma.chargeOrder.updateMany({
+    where: {
+      outTradeNo,
+      status: ChargeOrderStatus.PROCESSING,
+    },
+    data: {
+      status: ChargeOrderStatus.PENDING,
+    },
+  });
+};
+
+const hasAtMostTwoDecimals = (value: number) => {
+  const fen = value * 100;
+  return Math.abs(fen - Math.round(fen)) < 1e-8;
+};
+
+const parseYuanAmountToFen = (value: number, errorMessage: string) => {
+  if (!Number.isFinite(value)) {
+    throw new ChargeOrderError(400, errorMessage);
+  }
+
+  if (!hasAtMostTwoDecimals(value)) {
+    throw new ChargeOrderError(400, "充值金额最多保留两位小数");
+  }
+
+  const fen = Math.round(value * 100);
+  if (fen <= 0) {
+    throw new ChargeOrderError(400, "充值金额必须大于 0");
+  }
+
+  return fen;
+};
+
+const parseAlipayAmountToFen = (amount: string) => {
+  const normalized = amount.trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) {
+    throw new Error("支付宝返回的金额无效");
+  }
+
+  return BigInt(Math.round(Number.parseFloat(normalized) * 100));
+};
+
+const mapAlipayTradeStatus = (tradeStatus: string) => {
+  const normalized = tradeStatus.toUpperCase();
+
+  if (normalized === "TRADE_SUCCESS" || normalized === "TRADE_FINISHED") {
+    return "success" as const;
+  }
+
+  if (normalized === "TRADE_CLOSED") {
+    return "closed" as const;
+  }
+
+  if (normalized === "WAIT_BUYER_PAY") {
+    return "pending" as const;
+  }
+
+  return "processing" as const;
+};
+
+const assertAlipayGatewayReady = async (outTradeNo: string) => {
+  try {
+    await probeAlipayOrderQuery(outTradeNo);
+  } catch (error) {
+    paymentOrderLogger.error(
+      {
+        event: "payment.gateway.preflight-failed",
+        outTradeNo,
+        error: getErrorMessage(error),
+      },
+      "payment.gateway.preflight-failed",
+    );
+    throw new ChargeOrderError(503, "支付宝支付暂不可用，请稍后重试");
+  }
+};
+
 export async function getEnabledPaymentConfig() {
   const config = await businessPrisma.paymentConfig.findFirst({
     where: {
@@ -314,7 +409,7 @@ export async function createAlipayChargeOrder(input: {
   const outTradeNo = buildOutTradeNo(input.userId);
   const expireTime = new Date(Date.now() + view.orderTimeoutMinutes * 60 * 1000);
 
-  const { qrCode } = await precreateAlipayOrder({
+  const { paymentUrl } = createAlipayPagePayment({
     outTradeNo,
     subject: `账户充值-${input.amountYuan}元`,
     totalAmountFen: amountFen,
@@ -322,10 +417,7 @@ export async function createAlipayChargeOrder(input: {
     timeoutMinutes: view.orderTimeoutMinutes,
   });
 
-  const qrCodeDataUrl = await QRCode.toDataURL(qrCode, {
-    margin: 1,
-    width: 360,
-  });
+  await assertAlipayGatewayReady(outTradeNo);
 
   const chargeOrder = await businessPrisma.chargeOrder.create({
     data: {
@@ -336,8 +428,7 @@ export async function createAlipayChargeOrder(input: {
       outTradeNo,
       paymentCredential: toJsonSafe({
         alipay: {
-          qrCode,
-          qrCodeDataUrl,
+          paymentUrl,
         },
       }) as Prisma.InputJsonValue,
       status: ChargeOrderStatus.PENDING,
@@ -359,8 +450,7 @@ export async function createAlipayChargeOrder(input: {
     chargeOrderId: chargeOrder.id,
     outTradeNo: chargeOrder.outTradeNo,
     amount: fenToYuan(chargeOrder.amount),
-    qrCode,
-    qrCodeDataUrl,
+    paymentUrl,
     expireInSeconds: view.orderTimeoutMinutes * 60,
     expireAt: chargeOrder.expireTime?.toISOString() ?? expireTime.toISOString(),
   };
@@ -370,7 +460,7 @@ const setChargeOrderClosed = async (input: {
   outTradeNo: string;
   closedBy: string;
   reason: string;
-}) => {
+}): Promise<SetChargeOrderClosedResult> => {
   return businessPrisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<
       Array<{
@@ -394,6 +484,7 @@ const setChargeOrderClosed = async (input: {
     if (status === "success" || status === "closed" || status === "failed") {
       return {
         id: row.id,
+        outTradeNo: input.outTradeNo,
         status,
       };
     }
@@ -421,7 +512,7 @@ const setChargeOrderClosed = async (input: {
     return {
       id: updated.id,
       outTradeNo: updated.outTradeNo,
-      status: updated.status.toLowerCase(),
+      status: "closed",
     };
   });
 };
@@ -429,26 +520,40 @@ const setChargeOrderClosed = async (input: {
 export async function closeAlipayChargeOrder(input: {
   outTradeNo: string;
   closedBy: string;
-}) {
+}): Promise<CloseChargeOrderResult> {
   const reconcileByQuery = async () => {
-    const queried = await queryAlipayAndSyncChargeOrder(input.outTradeNo);
-    const tradeStatus = queried.tradeStatus.toUpperCase();
+    try {
+      const queried = await queryAlipayAndSyncChargeOrder(input.outTradeNo);
+      const status = mapAlipayTradeStatus(queried.tradeStatus);
 
-    if (tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED") {
-      return {
-        status: "success" as const,
-        outTradeNo: input.outTradeNo,
-      };
+      if (status === "success" || status === "closed") {
+        return {
+          status,
+          outTradeNo: input.outTradeNo,
+        } satisfies CloseChargeOrderResult;
+      }
+
+      return null;
+    } catch (error) {
+      if (isAlipayTradeNotExistError(error)) {
+        return null;
+      }
+
+      throw error;
     }
+  };
 
-    if (tradeStatus === "TRADE_CLOSED") {
-      return {
-        status: "closed" as const,
-        outTradeNo: input.outTradeNo,
-      };
-    }
+  const releaseAndWait = async (
+    reason: CloseChargeOrderPendingReason,
+  ): Promise<CloseChargeOrderResult> => {
+    await releaseProcessingOrderByOutTradeNo(input.outTradeNo);
 
-    return null;
+    return {
+      status: "pending",
+      outTradeNo: input.outTradeNo,
+      retryable: true,
+      reason,
+    };
   };
 
   // 先查询平台状态，避免“平台已支付但本地未更新”时误触发关单。
@@ -458,48 +563,62 @@ export async function closeAlipayChargeOrder(input: {
       return preCheck;
     }
   } catch {
-    // 查询失败时不阻塞关单流程，后续继续尝试关闭并在失败时再次对账。
+    // 平台状态无法确认时继续尝试关单，但不直接落本地终态。
   }
 
   try {
     await closeAlipayOrder(input.outTradeNo);
+    const result = await setChargeOrderClosed({
+      outTradeNo: input.outTradeNo,
+      closedBy: input.closedBy,
+      reason: "manual_or_system_close",
+    });
+    if (result.status === "failed") {
+      throw new ChargeOrderError(409, "订单已失败，无法关闭");
+    }
+    return {
+      status: result.status,
+      outTradeNo: result.outTradeNo,
+    };
   } catch (error) {
-    const message = (error as Error).message ?? "";
-    if (isIgnorableAlipayCloseError(message)) {
-      return setChargeOrderClosed({
+    if (isAlipayTradeAlreadyClosedError(error)) {
+      const result = await setChargeOrderClosed({
         outTradeNo: input.outTradeNo,
         closedBy: input.closedBy,
-        reason: "manual_or_system_close",
+        reason: "alipay_trade_already_closed",
       });
-    }
-
-    // 关闭失败时做一次兜底对账，规避支付状态竞争窗口。
-    try {
-      const reconciled = await reconcileByQuery();
-      if (reconciled) {
-        return reconciled;
+      if (result.status === "failed") {
+        throw new ChargeOrderError(409, "订单已失败，无法关闭");
       }
-    } catch {
-      // ignore and rethrow original close error below
+      return {
+        status: result.status,
+        outTradeNo: result.outTradeNo,
+      };
     }
 
-    throw error;
-  }
+    const reconciled = await reconcileByQuery();
+    if (reconciled) {
+      return reconciled;
+    }
 
-  return setChargeOrderClosed({
-    outTradeNo: input.outTradeNo,
-    closedBy: input.closedBy,
-    reason: "manual_or_system_close",
-  });
+    if (isAlipayTradeNotExistError(error)) {
+      return releaseAndWait("platform_not_ready");
+    }
+
+    if (error instanceof Error) {
+      paymentOrderLogger.warn(
+        {
+          event: "payment.close.unconfirmed",
+          outTradeNo: input.outTradeNo,
+          message: error.message,
+        },
+        "payment.close.unconfirmed",
+      );
+    }
+
+    return releaseAndWait("close_not_confirmed");
+  }
 }
-
-const parseAlipayAmountToFen = (amount: string) => {
-  const parsed = Number.parseFloat(amount);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error("支付宝返回的金额无效");
-  }
-  return yuanToFen(parsed);
-};
 
 export async function finalizeAlipaySuccess(input: {
   outTradeNo: string;
@@ -545,11 +664,8 @@ export async function finalizeAlipaySuccess(input: {
       };
     }
 
-    if (status === "closed" || status === "failed") {
-      throw new NonRetryablePaymentError(`订单已处于终态: ${status}`);
-    }
-
-    if (!["pending", "processing"].includes(status)) {
+    const recoverableStatuses = ["pending", "processing", "closed", "failed"];
+    if (!recoverableStatuses.includes(status)) {
       throw new Error(`订单状态异常: ${orderRow.status}`);
     }
 
@@ -594,6 +710,12 @@ export async function finalizeAlipaySuccess(input: {
           ...metadata,
           alipayCallback: input.payload,
           syncedBy: input.source,
+          ...(status === "closed" || status === "failed"
+            ? {
+                recoveredFromStatus: status,
+                recoveredAt: new Date().toISOString(),
+              }
+            : {}),
         }) as Prisma.InputJsonValue,
       },
     });
@@ -609,7 +731,20 @@ export async function finalizeAlipaySuccess(input: {
 const syncChargeOrderFromAlipay = async (
   order: ChargeOrderSyncClaim,
 ): Promise<PaymentSyncOutcome> => {
-  const alipayOrder = await queryAlipayOrderByOutTradeNo(order.outTradeNo);
+  let alipayOrder: AlipayOrderStatus;
+  try {
+    alipayOrder = await queryAlipayOrderByOutTradeNo(order.outTradeNo);
+  } catch (error) {
+    if (isAlipayTradeNotExistError(error)) {
+      await releaseProcessingOrder(order.id);
+      return {
+        orderId: order.id,
+        outTradeNo: order.outTradeNo,
+        status: "pending",
+      };
+    }
+    throw error;
+  }
   const tradeStatus = alipayOrder.tradeStatus.toUpperCase();
 
   if (tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED") {
@@ -764,6 +899,7 @@ export async function closeExpiredPendingOrders(
   const statusSummary = {
     success: 0,
     closed: 0,
+    pending: 0,
     failed: 0,
     other: 0,
   };
@@ -774,6 +910,8 @@ export async function closeExpiredPendingOrders(
       statusSummary.success += 1;
     } else if (status === "closed") {
       statusSummary.closed += 1;
+    } else if (status === "pending") {
+      statusSummary.pending += 1;
     } else if (status === "failed") {
       statusSummary.failed += 1;
     } else {
@@ -788,7 +926,7 @@ export async function closeExpiredPendingOrders(
     processed: results.length,
     success: fulfilled.length,
     failed,
-    released: releasedAfterFailure,
+    released: releasedAfterFailure + statusSummary.pending,
     statusSummary,
     durationMs: Date.now() - startedAt,
   };
@@ -925,6 +1063,10 @@ export async function queryAlipayAndSyncChargeOrder(outTradeNo: string) {
   return alipayOrder;
 }
 
+export function isOrderQueryPendingSafe(error: unknown) {
+  return isAlipayTradeNotExistError(error);
+}
+
 export async function upsertDefaultPaymentConfig() {
   const presetAmounts = [...DEFAULT_PAYMENT_PRESET_AMOUNTS];
   const appId = env.alipayAppId ?? "";
@@ -939,7 +1081,7 @@ export async function upsertDefaultPaymentConfig() {
     create: {
       provider: PaymentProvider.ALIPAY,
       displayName: "支付宝",
-      description: "支付宝扫码支付",
+      description: "支付宝电脑网站支付",
       icon: "zhifubao",
       status: enabled ? PaymentConfigStatus.ENABLED : PaymentConfigStatus.DISABLED,
       sortOrder: 10,
@@ -949,8 +1091,8 @@ export async function upsertDefaultPaymentConfig() {
       publicConfig: toJsonSafe(publicConfig) as Prisma.InputJsonValue,
     },
     update: {
-      displayName: "支付宝",
-      description: "支付宝扫码支付",
+        displayName: "支付宝",
+        description: "支付宝电脑网站支付",
       icon: "zhifubao",
       status: enabled ? PaymentConfigStatus.ENABLED : PaymentConfigStatus.DISABLED,
       presetAmounts: toJsonSafe(presetAmounts) as Prisma.InputJsonValue,
@@ -975,12 +1117,8 @@ export function parseRechargeAmount(raw: unknown) {
     throw new ChargeOrderError(400, "金额格式错误");
   }
 
-  const fen = yuanToFenNumber(raw);
-  if (fen <= 0) {
-    throw new ChargeOrderError(400, "充值金额必须大于 0");
-  }
-
-  return raw;
+  const fen = parseYuanAmountToFen(raw, "金额格式错误");
+  return fen / 100;
 }
 
 export function asAlipayPayload(order: AlipayOrderStatus) {
