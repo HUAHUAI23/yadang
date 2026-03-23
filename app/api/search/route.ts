@@ -1,4 +1,7 @@
-import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
+import {
+  AuthSessionError,
+  resolveBusinessSessionContext,
+} from "@/lib/auth/session";
 import { jsonError, jsonOk } from "@/lib/server/response";
 import { trademarkSearchService } from "@/lib/server/trademark-search";
 import { searchPayloadSchema } from "@/lib/validation/search";
@@ -11,7 +14,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const session = await resolveSessionContext({ createAccountIfMissing: true });
+    const session = await resolveBusinessSessionContext({
+      createAccountIfMissing: true,
+    });
     const response = await trademarkSearchService.search({
       userId: session.user.id,
       accountId: session.account.id,
@@ -35,4 +40,3 @@ export async function POST(request: Request) {
 }
 
 export const runtime = "nodejs";
-

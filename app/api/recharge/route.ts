@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
+import {
+  AuthSessionError,
+  resolveBusinessSessionContext,
+} from "@/lib/auth/session";
 import { withRequestTrace } from "@/lib/server/logger";
 import {
   ChargeOrderError,
@@ -22,7 +25,9 @@ export async function POST(request: Request) {
 
     try {
       const parsed = createRechargeOrderPayloadSchema.parse(body);
-      const session = await resolveSessionContext({ createAccountIfMissing: true });
+      const session = await resolveBusinessSessionContext({
+        createAccountIfMissing: true,
+      });
       const amountYuan = parseRechargeAmount(parsed.amount);
 
       ensurePaymentSchedulersStarted();

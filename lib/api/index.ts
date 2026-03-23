@@ -1,11 +1,14 @@
 import { request } from "@/lib/api/client";
 import type {
+  AdminAccountAdjustmentResult,
+  AdminUserView,
   AlipayCloseOrderResult,
   AlipayCreateOrderResult,
   AlipayQueryOrderResult,
   ApiResponse,
   AuthConfig,
   AuthResult,
+  AutoCreditRuleView,
   ChargeOrderItem,
   PasswordLoginPayload,
   PaymentConfigResult,
@@ -117,5 +120,61 @@ export const api = {
   clearHistory: (): Promise<ApiResponse<{ ok: boolean }>> =>
     request("/api/history/clear", {
       method: "POST",
+    }),
+  adminUsers: (
+    keyword?: string
+  ): Promise<ApiResponse<{ items: AdminUserView[] }>> => {
+    const query = keyword ? `?keyword=${encodeURIComponent(keyword)}` : "";
+    return request(`/api/admin/users${query}`, {
+      method: "GET",
+    });
+  },
+  adminUpdateRole: (
+    userId: number,
+    payload: { isAdmin: boolean }
+  ): Promise<ApiResponse<{ user: AdminUserView }>> =>
+    request(`/api/admin/users/${userId}/role`, {
+      method: "POST",
+      body: payload,
+    }),
+  adminUpdateBlacklist: (
+    userId: number,
+    payload: { isBlacklisted: boolean; reason?: string }
+  ): Promise<ApiResponse<{ user: AdminUserView }>> =>
+    request(`/api/admin/users/${userId}/blacklist`, {
+      method: "POST",
+      body: payload,
+    }),
+  adminAdjustAccount: (
+    userId: number,
+    payload: { action: "add" | "subtract" | "reset"; amount?: number; reason: string }
+  ): Promise<ApiResponse<AdminAccountAdjustmentResult>> =>
+    request(`/api/admin/users/${userId}/account-adjustment`, {
+      method: "POST",
+      body: payload,
+    }),
+  adminAutoCreditRules: (): Promise<ApiResponse<{ items: AutoCreditRuleView[] }>> =>
+    request("/api/admin/auto-credit-rules", {
+      method: "GET",
+    }),
+  adminCreateAutoCreditRule: (
+    payload: { name: string; intervalDays: number; amount: number; enabled: boolean }
+  ): Promise<ApiResponse<{ item: AutoCreditRuleView }>> =>
+    request("/api/admin/auto-credit-rules", {
+      method: "POST",
+      body: payload,
+    }),
+  adminUpdateAutoCreditRule: (
+    ruleId: number,
+    payload: Partial<{
+      name: string;
+      intervalDays: number;
+      amount: number;
+      enabled: boolean;
+    }>
+  ): Promise<ApiResponse<{ item: AutoCreditRuleView }>> =>
+    request(`/api/admin/auto-credit-rules/${ruleId}`, {
+      method: "PATCH",
+      body: payload,
     }),
 };

@@ -78,7 +78,9 @@ export const getOrderStatusLabel = (status: string) => {
 };
 
 export const normalizeTransactionKind = (type: string): TransactionKind => {
-  if (type === "RECHARGE") return "recharge";
+  if (type === "RECHARGE" || type === "ADMIN_ADJUSTMENT" || type === "AUTO_CREDIT") {
+    return "recharge";
+  }
   if (type === "SEARCH_DEBIT") return "expense";
   return "all";
 };
@@ -87,6 +89,7 @@ export const getTransactionTypeLabel = (type: string) => {
   if (type === "RECHARGE") return "账户充值";
   if (type === "SEARCH_DEBIT") return "检索扣费";
   if (type === "ADMIN_ADJUSTMENT") return "人工调整";
+  if (type === "AUTO_CREDIT") return "自动加钱";
   return type;
 };
 
@@ -95,6 +98,7 @@ export const getTransactionDescription = (item: TransactionItem) => {
   if (item.type === "RECHARGE") return "支付宝充值到账";
   if (item.type === "SEARCH_DEBIT") return "图像检索扣费";
   if (item.type === "ADMIN_ADJUSTMENT") return "管理员调整账户余额";
+  if (item.type === "AUTO_CREDIT") return "系统按规则自动发放";
   return "-";
 };
 

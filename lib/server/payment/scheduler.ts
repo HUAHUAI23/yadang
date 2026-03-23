@@ -1,6 +1,7 @@
 import { Cron } from "croner";
 
 import { env } from "@/lib/env";
+import { executeAutoCreditRulesJob } from "@/lib/server/admin/service";
 import {
   childLogger,
   createTraceId,
@@ -44,7 +45,7 @@ const getState = () => {
 };
 
 const runSafely = async (
-  name: "sync" | "close",
+  name: "sync" | "close" | "auto-credit",
   handler: (context: PaymentJobContext) => Promise<Record<string, unknown>>,
 ) => {
   const traceId = createTraceId();
@@ -121,11 +122,30 @@ export const ensurePaymentSchedulersStarted = () => {
   );
 
   state.jobs.push(syncJob, closeJob);
+
+  if (env.autoCreditSchedulerEnabled) {
+    const autoCreditJob = new Cron(
+      env.autoCreditRuleScanCron,
+      {
+        name: "admin-auto-credit",
+        protect: true,
+      },
+      () =>
+        runSafely("auto-credit", async () => {
+          const result = await executeAutoCreditRulesJob();
+          return result;
+        }),
+    );
+
+    state.jobs.push(autoCreditJob);
+  }
+
   state.started = true;
   paymentSchedulerLogger.info(
     {
       syncCron: env.paymentOrderSyncCron,
       closeCron: env.paymentOrderCloseCron,
+      autoCreditCron: env.autoCreditRuleScanCron,
     },
     "payment.scheduler.started",
   );

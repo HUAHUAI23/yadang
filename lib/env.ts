@@ -347,6 +347,14 @@ class EnvConfig {
     return this.number("PAYMENT_ORDER_PROCESSING_STALE_SECONDS", 120);
   }
 
+  get autoCreditSchedulerEnabled() {
+    return this.boolean("AUTO_CREDIT_SCHEDULER_ENABLED") ?? true;
+  }
+
+  get autoCreditRuleScanCron() {
+    return this.optional("AUTO_CREDIT_RULE_SCAN_CRON", "0 */5 * * * *");
+  }
+
   get initialAccountBalance() {
     return this.number("INITIAL_ACCOUNT_BALANCE", 100);
   }

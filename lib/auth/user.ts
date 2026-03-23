@@ -8,11 +8,17 @@ export const toAuthUser = (user: {
   username: string | null;
   phone: string | null;
   avatar: string;
+  isAdmin: boolean;
+  isBlacklisted: boolean;
+  blacklistReason: string | null;
 }): AuthUser => ({
   id: user.id,
   username: user.username,
   phone: user.phone,
   avatar: user.avatar,
+  isAdmin: user.isAdmin,
+  isBlacklisted: user.isBlacklisted,
+  blacklistReason: user.blacklistReason,
 });
 
 export const toAuthAccount = (account: {

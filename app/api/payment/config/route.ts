@@ -1,4 +1,7 @@
-import { AuthSessionError, resolveSessionContext } from "@/lib/auth/session";
+import {
+  AuthSessionError,
+  resolveBusinessSessionContext,
+} from "@/lib/auth/session";
 import { withRequestTrace } from "@/lib/server/logger";
 import { isAlipayEnabled } from "@/lib/server/payment/alipay";
 import {
@@ -10,7 +13,7 @@ import { jsonError, jsonOk } from "@/lib/server/response";
 export async function GET(request: Request) {
   return withRequestTrace(request, async () => {
     try {
-      await resolveSessionContext({ createAccountIfMissing: true });
+      await resolveBusinessSessionContext({ createAccountIfMissing: true });
 
       try {
         if (!isAlipayEnabled()) {

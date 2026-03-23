@@ -10,6 +10,7 @@ interface HeaderProps {
   user: AuthUser | null;
   onOpenRecharge: () => void;
   isAuthenticated: boolean;
+  isAdmin?: boolean;
   onLogout: () => void;
   onLogin: () => void;
 }
@@ -19,6 +20,7 @@ export default function Header({
   user,
   onOpenRecharge,
   isAuthenticated,
+  isAdmin = false,
   onLogout,
   onLogin,
 }: HeaderProps) {
@@ -60,6 +62,14 @@ export default function Header({
           <div className="flex items-center gap-4">
             {isAuthenticated && (
               <div className="hidden items-center gap-5 lg:flex">
+                {isAdmin ? (
+                  <Link
+                    href="/admin"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    管理后台
+                  </Link>
+                ) : null}
                 <div className="flex flex-col items-end border-r border-slate-200 pr-5">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     账户余额
@@ -87,6 +97,14 @@ export default function Header({
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 lg:hidden">
+                  {isAdmin ? (
+                    <Link
+                      href="/admin"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700"
+                    >
+                      后台
+                    </Link>
+                  ) : null}
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                       余额

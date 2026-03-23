@@ -1006,7 +1006,9 @@ export async function listTransactionsByUser(
 ) {
   const where: Prisma.TransactionWhereInput = { userId };
   if (options.kind === "recharge") {
-    where.type = TransactionType.RECHARGE;
+    where.type = {
+      in: [TransactionType.RECHARGE, TransactionType.ADMIN_ADJUSTMENT, TransactionType.AUTO_CREDIT],
+    };
   } else if (options.kind === "expense") {
     where.type = TransactionType.SEARCH_DEBIT;
   }

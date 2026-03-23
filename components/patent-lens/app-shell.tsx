@@ -26,6 +26,7 @@ export default function AppShell() {
 
   const {
     isAuthenticated,
+    isAdmin,
     user,
     account,
     setSession,
@@ -180,6 +181,7 @@ export default function AppShell() {
           isAuthenticated ? setIsRechargeOpen(true) : setIsAuthOpen(true)
         }
         isAuthenticated={isAuthenticated}
+        isAdmin={isAdmin}
         onLogout={handleLogout}
         onLogin={() => setIsAuthOpen(true)}
       />
