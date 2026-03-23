@@ -43,7 +43,7 @@ export default function Landing({ onStart }: LandingProps) {
               <span>检索</span>
             </h1>
             <p className="mb-12 max-w-xl text-xl font-medium leading-relaxed text-slate-500">
-              PatentLens 聚焦图片检索外观专利与商标，内测期间每天免费试用 10 次查询。
+              立搜聚焦图片检索外观专利与商标，内测期间每天免费试用 10 次查询。
             </p>
             <div className="flex flex-wrap gap-4">
               <button

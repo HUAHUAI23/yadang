@@ -54,8 +54,8 @@ export default function Header({
                 />
               </svg>
             </div>
-            <span className="text-xl font-[900] uppercase tracking-tight text-slate-950">
-              PatentLens
+            <span className="text-xl font-[900] tracking-tight text-slate-950">
+              立搜
             </span>
           </Link>
 

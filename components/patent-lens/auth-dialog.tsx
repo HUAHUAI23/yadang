@@ -5,7 +5,9 @@ import type { Resolver } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import UserAgreementDialog from "@/components/patent-lens/user-agreement-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +75,9 @@ export default function AuthDialog({
   const [captchaCode, setCaptchaCode] = useState(generateCaptchaCode());
   const [countdown, setCountdown] = useState(0);
   const [smsHint, setSmsHint] = useState("");
+  const [agreementAccepted, setAgreementAccepted] = useState(true);
+  const [agreementDialogOpen, setAgreementDialogOpen] = useState(false);
+  const [agreementError, setAgreementError] = useState("");
 
   const allowPassword = authConfig.password;
   const allowSms = authConfig.sms;
@@ -106,6 +111,19 @@ export default function AuthDialog({
       confirmPassword: "",
     },
   });
+
+  const resetAgreementState = () => {
+    setAgreementAccepted(true);
+    setAgreementDialogOpen(false);
+    setAgreementError("");
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetAgreementState();
+    }
+    onOpenChange(nextOpen);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -158,6 +176,11 @@ export default function AuthDialog({
   };
 
   const handleSubmit = async (values: AuthFormValues) => {
+    if (!agreementAccepted) {
+      setAgreementError("请先阅读并勾选同意用户协议");
+      return;
+    }
+
     if (effectiveMode === "login") {
       if (effectiveLoginMethod === "password") {
         const response = await api.authLoginPassword({
@@ -208,6 +231,7 @@ export default function AuthDialog({
     setSmsHint("");
     setCountdown(0);
     setCaptchaCode(generateCaptchaCode());
+    setAgreementError("");
     form.reset();
   };
 
@@ -215,12 +239,12 @@ export default function AuthDialog({
   const showRegister = allowPassword;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="w-full max-w-md overflow-hidden rounded-[2.5rem] bg-white p-0 shadow-none">
         <div className="p-10">
           <DialogHeader className="mb-8">
             <DialogTitle className="text-3xl font-[900] text-slate-900 tracking-tight">
-              {effectiveMode === "register" ? "加入 PatentLens" : "欢迎回来"}
+              {effectiveMode === "register" ? "加入立搜" : "欢迎回来"}
             </DialogTitle>
           </DialogHeader>
 
@@ -454,6 +478,38 @@ export default function AuthDialog({
                 />
               )}
 
+              <div className="space-y-2">
+                <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <Checkbox
+                    id="user-agreement"
+                    checked={agreementAccepted}
+                    onCheckedChange={(checked) => {
+                      const accepted = checked === true;
+                      setAgreementAccepted(accepted);
+                      if (accepted) {
+                        setAgreementError("");
+                      }
+                    }}
+                    className="mt-1 border-slate-300 data-[state=checked]:border-slate-900 data-[state=checked]:bg-slate-900"
+                  />
+                  <div className="min-w-0 flex-1 text-xs font-bold leading-6 text-slate-500">
+                    <label htmlFor="user-agreement" className="cursor-pointer">
+                      我已阅读并同意
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setAgreementDialogOpen(true)}
+                      className="ml-1 font-black text-blue-600 transition-colors hover:text-blue-700"
+                    >
+                      《用户协议》
+                    </button>
+                  </div>
+                </div>
+                {agreementError ? (
+                  <p className="text-xs font-bold text-rose-500">{agreementError}</p>
+                ) : null}
+              </div>
+
               <Button
                 type="submit"
                 disabled={!allowPassword && !allowSms}
@@ -488,6 +544,11 @@ export default function AuthDialog({
           )}
         </div>
       </DialogContent>
+
+      <UserAgreementDialog
+        open={agreementDialogOpen}
+        onOpenChange={setAgreementDialogOpen}
+      />
     </Dialog>
   );
 }
