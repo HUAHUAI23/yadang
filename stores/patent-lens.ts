@@ -8,6 +8,7 @@ type PatentLensState = {
   user: AuthUser | null;
   account: AccountState | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   history: SearchHistoryItem[];
   setSession: (payload: { user: AuthUser | null; account: AccountState | null }) => void;
   setBalance: (balance: number) => void;
@@ -21,12 +22,14 @@ export const usePatentLensStore = create<PatentLensState>()((set) => ({
   user: null,
   account: null,
   isAuthenticated: false,
+  isAdmin: false,
   history: [],
   setSession: ({ user, account }) =>
     set({
       user,
       account,
       isAuthenticated: Boolean(user),
+      isAdmin: Boolean(user?.isAdmin),
       history: [],
     }),
   setBalance: (balance) =>
@@ -44,6 +47,7 @@ export const usePatentLensStore = create<PatentLensState>()((set) => ({
       user: null,
       account: null,
       isAuthenticated: false,
+      isAdmin: false,
       history: [],
     }),
 }));

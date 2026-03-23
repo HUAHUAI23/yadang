@@ -25,7 +25,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PatentLens - 知识产权图像检索",
+  title: "立搜 - 知识产权图像检索",
   description: "下一代知识产权智能视觉检索体验",
 };
 

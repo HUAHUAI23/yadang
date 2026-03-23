@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -39,19 +39,29 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
     return images;
   }, [item]);
 
-  const [activeImage, setActiveImage] = useState("");
-
-  useEffect(() => {
-    if (!item) {
-      setActiveImage("");
-      return;
+  const [selectedImage, setSelectedImage] = useState("");
+  const activeImage = useMemo(() => {
+    if (!item) return "";
+    if (selectedImage && galleryImages.includes(selectedImage)) {
+      return selectedImage;
     }
-    setActiveImage(galleryImages[0] ?? item.imageUrl);
-  }, [galleryImages, item]);
+    return galleryImages[0] ?? item.imageUrl;
+  }, [galleryImages, item, selectedImage]);
 
   return (
-    <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl overflow-hidden p-0">
+    <Dialog
+      open={!!item}
+      onOpenChange={(open) => {
+        if (!open) {
+          setSelectedImage("");
+          onClose();
+        }
+      }}
+    >
+      <DialogContent
+        size="wide"
+        className="w-full max-w-5xl overflow-hidden rounded-4xl bg-white p-0"
+      >
         {item && (
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/2 bg-gray-50 p-8 flex items-center justify-center">
@@ -62,7 +72,7 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   unoptimized
-                  className="object-contain drop-shadow-xl"
+                  className="object-contain"
                 />
               </div>
             </div>
@@ -140,7 +150,7 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
                       <button
                         key={`${item.id}-${index}`}
                         type="button"
-                        onClick={() => setActiveImage(url)}
+                        onClick={() => setSelectedImage(url)}
                         className="relative block h-20 rounded-xl border border-gray-200 overflow-hidden bg-gray-100"
                         title={`查看原图 ${index + 1}`}
                       >
@@ -162,7 +172,7 @@ export default function PatentDetail({ item, onClose }: PatentDetailProps) {
               ) : null}
 
               <div className="mt-10 flex space-x-4">
-                <Button className="flex-1 bg-gray-900 hover:bg-black text-white py-4 rounded-2xl font-bold transition-all uppercase text-xs tracking-widest">
+                <Button className="flex-1 rounded-2xl bg-gray-900 py-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-black">
                   查看官方详情
                 </Button>
                 <Button

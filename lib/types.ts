@@ -50,6 +50,45 @@ export interface AccountState {
   balance: number; // 元
 }
 
+export interface AutoCreditRuleView {
+  id: number;
+  name: string;
+  intervalDays: number;
+  amount: number; // 元
+  enabled: boolean;
+  lastExecutedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdByName: string | null;
+  updatedByName: string | null;
+}
+
+export interface AdminUserView {
+  id: number;
+  username: string | null;
+  phone: string | null;
+  avatar: string;
+  isAdmin: boolean;
+  isBlacklisted: boolean;
+  blacklistReason: string | null;
+  balance: number; // 元
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminAccountAdjustmentResult {
+  user: AdminUserView;
+  transaction: {
+    id: string;
+    amount: number;
+    balanceBefore: number;
+    balanceAfter: number;
+    type: string;
+    description: string;
+    createdAt: string;
+  };
+}
+
 export interface RechargePackage {
   id: string;
   amount: number;
@@ -93,6 +132,9 @@ export type AuthUser = {
   username: string | null;
   phone: string | null;
   avatar: string;
+  isAdmin: boolean;
+  isBlacklisted: boolean;
+  blacklistReason: string | null;
 };
 
 export type PasswordLoginPayload = {

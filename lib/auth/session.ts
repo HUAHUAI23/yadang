@@ -18,6 +18,9 @@ export type SessionUser = {
   username: string | null;
   phone: string | null;
   avatar: string;
+  isAdmin: boolean;
+  isBlacklisted: boolean;
+  blacklistReason: string | null;
 };
 
 export type SessionAccount = {
@@ -29,6 +32,12 @@ export type SessionAccount = {
 export type SessionContext = {
   user: SessionUser;
   account: SessionAccount;
+};
+
+export type AdminSessionContext = SessionContext & {
+  user: SessionUser & {
+    isAdmin: true;
+  };
 };
 
 export async function resolveSessionContext(
@@ -54,6 +63,9 @@ export async function resolveSessionContext(
       username: true,
       phone: true,
       avatar: true,
+      isAdmin: true,
+      isBlacklisted: true,
+      blacklistReason: true,
     },
   });
 
@@ -106,3 +118,41 @@ export async function resolveSessionContext(
   };
 }
 
+export async function requireAdminSession(
+  options: { createAccountIfMissing?: boolean } = {},
+): Promise<AdminSessionContext> {
+  const session = await resolveSessionContext(options);
+  if (!session.user.isAdmin) {
+    throw new AuthSessionError(403, "无管理员权限");
+  }
+
+  return {
+    ...session,
+    user: {
+      ...session.user,
+      isAdmin: true,
+    },
+  };
+}
+
+export function assertBusinessAllowed(
+  user: Pick<SessionUser, "isBlacklisted" | "blacklistReason">,
+) {
+  if (!user.isBlacklisted) {
+    return;
+  }
+
+  const reason = user.blacklistReason?.trim();
+  throw new AuthSessionError(
+    403,
+    reason ? `账号已被限制业务操作：${reason}` : "账号已被限制业务操作",
+  );
+}
+
+export async function resolveBusinessSessionContext(
+  options: { createAccountIfMissing?: boolean } = {},
+): Promise<SessionContext> {
+  const session = await resolveSessionContext(options);
+  assertBusinessAllowed(session.user);
+  return session;
+}

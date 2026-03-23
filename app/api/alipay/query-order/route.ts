@@ -4,6 +4,7 @@ import {
   asAlipayPayload,
   ChargeOrderError,
   getChargeOrderForUser,
+  isOrderQueryPendingSafe,
   parseChargeOrderId,
   queryAlipayAndSyncChargeOrder,
   toChargeOrderStatusView,
@@ -36,8 +37,10 @@ export async function GET(request: Request) {
         try {
           const queryResult = await queryAlipayAndSyncChargeOrder(localOrder.outTradeNo);
           alipayOrder = asAlipayPayload(queryResult);
-        } catch {
-          alipayQueryFailed = true;
+        } catch (error) {
+          if (!isOrderQueryPendingSafe(error)) {
+            alipayQueryFailed = true;
+          }
         }
       }
 

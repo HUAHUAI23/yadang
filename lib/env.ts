@@ -303,6 +303,18 @@ class EnvConfig {
     return this.optionalString("ALIPAY_NOTIFY_URL");
   }
 
+  get alipayReturnUrl() {
+    return this.optionalString("ALIPAY_RETURN_URL");
+  }
+
+  get alipayAppAuthToken() {
+    return this.optionalString("ALIPAY_APP_AUTH_TOKEN");
+  }
+
+  get alipaySysServiceProviderId() {
+    return this.optionalString("ALIPAY_SYS_SERVICE_PROVIDER_ID");
+  }
+
   get alipayGateway() {
     return this.optional("ALIPAY_GATEWAY", "https://openapi.alipay.com/gateway.do");
   }
@@ -333,6 +345,14 @@ class EnvConfig {
 
   get paymentOrderProcessingStaleSeconds() {
     return this.number("PAYMENT_ORDER_PROCESSING_STALE_SECONDS", 120);
+  }
+
+  get autoCreditSchedulerEnabled() {
+    return this.boolean("AUTO_CREDIT_SCHEDULER_ENABLED") ?? true;
+  }
+
+  get autoCreditRuleScanCron() {
+    return this.optional("AUTO_CREDIT_RULE_SCAN_CRON", "0 */5 * * * *");
   }
 
   get initialAccountBalance() {

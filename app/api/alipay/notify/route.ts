@@ -7,10 +7,7 @@ import {
   withRequestTrace,
 } from "@/lib/server/logger";
 import { verifyNotificationSignature } from "@/lib/server/payment/alipay";
-import {
-  finalizeAlipaySuccess,
-  NonRetryablePaymentError,
-} from "@/lib/server/payment/charge-orders";
+import { finalizeAlipaySuccess } from "@/lib/server/payment/charge-orders";
 
 const notifyLogger = childLogger({
   domain: "payment",
@@ -97,15 +94,6 @@ export async function POST(request: Request) {
       );
       return successText();
     } catch (error) {
-      if (error instanceof NonRetryablePaymentError) {
-        notifyLogger.warn(
-          {
-            error: error.message,
-          },
-          "payment.notify.non-retryable",
-        );
-        return successText();
-      }
       notifyLogger.error(
         {
           error: serializeError(error),

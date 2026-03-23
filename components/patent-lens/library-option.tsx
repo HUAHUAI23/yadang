@@ -31,19 +31,19 @@ export default function LibraryOption({
 
   return (
     <label
-      className={`flex items-center justify-between p-5 rounded-[2rem] cursor-pointer border-2 transition-all duration-300 ${
+      className={`flex cursor-pointer items-center justify-between rounded-[2rem] border-2 p-5 transition-colors ${
         isBlue
           ? checked
-            ? "border-blue-500 bg-blue-50/30 shadow-lg shadow-blue-500/5"
+            ? "border-blue-500 bg-blue-50/30"
             : "border-slate-100 hover:border-blue-100"
           : checked
-            ? "border-purple-500 bg-purple-50/30 shadow-lg shadow-purple-500/5"
+            ? "border-purple-500 bg-purple-50/30"
             : "border-slate-100 hover:border-purple-100"
       }`}
     >
-      <div className="flex items-center space-x-5">
+      <div className="flex items-center gap-5">
         <div
-          className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-colors ${badgeClasses}`}
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl font-black transition-colors ${badgeClasses}`}
         >
           {label[0]}
         </div>
